@@ -1,10 +1,10 @@
-import './globals.css'
-import type { Metadata } from 'next'
+import "../styles/globals.css";
+import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: process.env.NEXT_PUBLIC_APP_NAME || 'SpendWise',
-  description: 'Mobile-first expense tracker',
-}
+  title: process.env.NEXT_PUBLIC_APP_NAME || "SpendWise",
+  description: "Mobile-first expense tracker",
+};
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -13,5 +13,5 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {children}
       </body>
     </html>
-  )
+  );
 }
