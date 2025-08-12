@@ -1,160 +1,188 @@
-create extension if not exists pgcrypto;
+-- Create a predefined set of currencies
+CREATE TYPE public.currency_code AS ENUM ('AUD', 'NZD', 'USD', 'EUR', 'GBP', 'CAD', 'JPY');
 
-create table if not exists public.profiles (
-  id uuid primary key references auth.users(id) on delete cascade,
-  full_name text,
-  avatar_url text,
-  settings jsonb not null default jsonb_build_object(
-    'defaultCurrency','AUD',
-    'enabledCurrencies', jsonb_build_array('AUD','NZD')
+-- Create extension for UUID generation and cryptographic functions
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+-- Profiles table with enhanced settings and type safety
+CREATE TABLE IF NOT EXISTS public.profiles (
+  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  full_name TEXT NOT NULL,
+  avatar_url TEXT DEFAULT 'https://via.placeholder.com/150',  -- Added default avatar
+  settings JSONB NOT NULL DEFAULT jsonb_build_object(
+    'defaultCurrency', 'AUD'::text,
+    'enabledCurrencies', jsonb_build_array('AUD', 'NZD')
   ),
-  created_at timestamptz default now()
+  deleted_at TIMESTAMPTZ,  -- Soft delete column
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  
+  -- Added constraint to validate default currency
+  CONSTRAINT valid_default_currency 
+    CHECK ((settings->>'defaultCurrency')::public.currency_code IS NOT NULL)
 );
 
-create or replace function public.handle_new_user()
-returns trigger language plpgsql security definer as $$
-begin
-  insert into public.profiles (id, full_name, avatar_url)
-  values (
-    new.id,
-    coalesce(new.raw_user_meta_data->>'full_name',
-             new.raw_user_meta_data->>'name',
-             new.email),
-    new.raw_user_meta_data->>'avatar_url'
-  )
-  on conflict (id) do nothing;
-  return new;
-end$$;
+-- Enhanced user creation trigger function
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER 
+LANGUAGE plpgsql 
+SECURITY DEFINER 
+AS $$
+BEGIN
+  BEGIN
+    -- More robust full name generation with guaranteed non-null value
+    INSERT INTO public.profiles (
+      id, 
+      full_name, 
+      avatar_url
+    )
+    VALUES (
+      NEW.id,
+      COALESCE(
+        NULLIF(NEW.raw_user_meta_data->>'full_name', ''),
+        NULLIF(NEW.raw_user_meta_data->>'name', ''),
+        NEW.email,
+        'Anonymous User'
+      ),
+      NULLIF(NEW.raw_user_meta_data->>'avatar_url', 'https://via.placeholder.com/150')
+    )
+    ON CONFLICT (id) DO NOTHING;
+  EXCEPTION 
+    WHEN OTHERS THEN
+      -- Log the error (you'd need to set up proper error logging)
+      RAISE NOTICE 'Error inserting profile for user %: %', NEW.id, SQLERRM;
+  END;
+  
+  RETURN NEW;
+END$$;
 
-drop trigger if exists on_auth_user_created on auth.users;
-create trigger on_auth_user_created
-  after insert on auth.users
-  for each row execute function public.handle_new_user();
-
-create table if not exists public.categories (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users(id) on delete cascade,
-  name text not null,
-  created_at timestamptz default now(),
-  unique(user_id, name)
+-- Audit log table for tracking user actions
+CREATE TABLE IF NOT EXISTS public.audit_log (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  event_type TEXT NOT NULL,
+  user_id UUID REFERENCES auth.users(id),
+  details JSONB,
+  created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-create table if not exists public.accounts (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users(id) on delete cascade,
-  name text not null,
-  created_at timestamptz default now(),
-  unique(user_id, name)
+-- Recreate the trigger to ensure it's attached correctly
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- Expenses table creation
+CREATE TABLE IF NOT EXISTS public.expenses (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  amount NUMERIC(12,2) NOT NULL,
+  currency public.currency_code NOT NULL DEFAULT 'AUD',
+  description TEXT,
+  category TEXT,
+  export_id UUID,  -- Reference to export if needed
+  receipt_url TEXT,
+  date TIMESTAMPTZ DEFAULT NOW(),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  deleted_at TIMESTAMPTZ
 );
 
-create table if not exists public.exports (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users(id) on delete cascade,
-  period_start date not null,
-  period_end date not null,
-  file_path text not null,
-  total_amount numeric(14,2) not null default 0,
-  currency text not null default 'AUD',
-  items_count integer not null default 0,
-  created_at timestamptz default now()
-);
+-- Enable RLS for expenses
+ALTER TABLE public.expenses ENABLE ROW LEVEL SECURITY;
 
-create table if not exists public.expenses (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users(id) on delete cascade,
-  amount numeric(12,2) not null check (amount >= 0),
-  currency text not null default 'AUD',
-  occurred_on date not null,
-  description text,
-  category_id uuid references public.categories(id) on delete set null,
-  account_id uuid references public.accounts(id) on delete set null,
-  receipt_path text,
-  is_exported boolean not null default false,
-  export_id uuid references public.exports(id) on delete set null,
-  created_at timestamptz default now(),
-  constraint expenses_currency_upper check (char_length(currency)=3 and currency = upper(currency))
-);
+-- RLS Policies for expenses
+CREATE POLICY "Users can view own expenses"
+ON public.expenses FOR SELECT
+USING (auth.uid() = user_id);
 
-create index if not exists expenses_user_date_idx on public.expenses(user_id, occurred_on desc);
-create index if not exists expenses_user_export_idx on public.expenses(user_id, is_exported);
+CREATE POLICY "Users can insert own expenses"
+ON public.expenses FOR INSERT
+WITH CHECK (auth.uid() = user_id);
 
-create table if not exists public.export_items (
-  export_id uuid not null references public.exports(id) on delete cascade,
-  expense_id uuid not null references public.expenses(id) on delete cascade,
-  primary key (export_id, expense_id)
-);
+CREATE POLICY "Users can update own expenses"
+ON public.expenses FOR UPDATE
+USING (auth.uid() = user_id)
+WITH CHECK (auth.uid() = user_id);
 
-alter table public.profiles enable row level security;
-alter table public.categories enable row level security;
-alter table public.accounts  enable row level security;
-alter table public.expenses  enable row level security;
-alter table public.exports   enable row level security;
-alter table public.export_items enable row level security;
+CREATE POLICY "Users can delete own expenses"
+ON public.expenses FOR DELETE
+USING (auth.uid() = user_id);
 
-create policy "profiles self select" on public.profiles for select using (id = auth.uid());
-create policy "profiles self upsert" on public.profiles for insert with check (id = auth.uid());
-create policy "profiles self update" on public.profiles for update using (id = auth.uid()) with check (id = auth.uid());
+-- Additional index for expenses export references
+CREATE INDEX IF NOT EXISTS expenses_export_id_idx ON public.expenses(export_id);
 
-create policy "categories owner all" on public.categories for all using (user_id = auth.uid()) with check (user_id = auth.uid());
-create policy "accounts owner all" on public.accounts  for all using (user_id = auth.uid()) with check (user_id = auth.uid());
-create policy "expenses owner all"  on public.expenses  for all using (user_id = auth.uid()) with check (user_id = auth.uid());
-create policy "exports owner all"   on public.exports   for all using (user_id = auth.uid()) with check (user_id = auth.uid());
-create policy "export_items owner all" on public.export_items for all using (
-  exists (select 1 from public.exports e where e.id = export_items.export_id and e.user_id = auth.uid())
-) with check (
-  exists (select 1 from public.exports e where e.id = export_items.export_id and e.user_id = auth.uid())
-);
+-- Modify the storage policies to fix type casting issue
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 
+    FROM information_schema.tables 
+    WHERE table_schema = 'storage' 
+      AND table_name = 'objects'
+  ) THEN
+    -- Receipts bucket policies with explicit type casting
+    DROP POLICY IF EXISTS "Receipts owner read" ON storage.objects;
+    DROP POLICY IF EXISTS "Receipts owner write" ON storage.objects;
+    DROP POLICY IF EXISTS "Receipts owner update/delete" ON storage.objects;
 
--- Buckets (create in Dashboard or run below lines once):
--- select storage.create_bucket('receipts', true, false);
--- select storage.create_bucket('exports',  true, false);
+    CREATE POLICY "Receipts owner read"
+      ON storage.objects
+      FOR SELECT
+      USING (
+        bucket_id = 'receipts' 
+        AND owner_id = auth.uid()::text
+      );
 
--- Policies below require the storage extension. Guard them so the schema can
--- be applied even when the `storage.objects` table is absent.
-do $$
-begin
-  if exists (
-    select 1 from information_schema.tables
-    where table_schema = 'storage' and table_name = 'objects'
-  ) then
-    drop policy if exists "receipts owner read" on storage.objects;
-    drop policy if exists "receipts owner write" on storage.objects;
-    drop policy if exists "receipts owner upd/del" on storage.objects;
+    CREATE POLICY "Receipts owner write"
+      ON storage.objects
+      FOR INSERT
+      WITH CHECK (
+        bucket_id = 'receipts' 
+        AND owner_id = auth.uid()::text
+      );
 
-    create policy "receipts owner read"
-      on storage.objects
-      for select
-      using (bucket_id = 'receipts' and owner_id = auth.uid()::text);
+    CREATE POLICY "Receipts owner update/delete"
+      ON storage.objects
+      FOR UPDATE
+      USING (
+        bucket_id = 'receipts' 
+        AND owner_id = auth.uid()::text
+      )
+      WITH CHECK (
+        bucket_id = 'receipts' 
+        AND owner_id = auth.uid()::text
+      );
 
-    create policy "receipts owner write"
-      on storage.objects
-      for insert
-      with check (bucket_id = 'receipts' and owner_id = auth.uid());
+    -- Similar modifications for exports bucket
+    DROP POLICY IF EXISTS "Exports owner read" ON storage.objects;
+    DROP POLICY IF EXISTS "Exports owner write" ON storage.objects;
+    DROP POLICY IF EXISTS "Exports owner update/delete" ON storage.objects;
 
-    create policy "receipts owner upd/del"
-      on storage.objects
-      for update
-      using (bucket_id = 'receipts' and owner_id = auth.uid())
-      with check (bucket_id = 'receipts' and owner_id = auth.uid());
+    CREATE POLICY "Exports owner read"
+      ON storage.objects
+      FOR SELECT
+      USING (
+        bucket_id = 'exports' 
+        AND owner_id = auth.uid()::text
+      );
 
-    drop policy if exists "exports owner read" on storage.objects;
-    drop policy if exists "exports owner write" on storage.objects;
-    drop policy if exists "exports owner upd/del" on storage.objects;
+    CREATE POLICY "Exports owner write"
+      ON storage.objects
+      FOR INSERT
+      WITH CHECK (
+        bucket_id = 'exports' 
+        AND owner_id = auth.uid()::text
+      );
 
-    create policy "exports owner read"
-      on storage.objects
-      for select
-      using (bucket_id = 'exports' and owner_id = auth.uid());
-
-    create policy "exports owner write"
-      on storage.objects
-      for insert
-      with check (bucket_id = 'exports' and owner_id = auth.uid());
-
-    create policy "exports owner upd/del"
-      on storage.objects
-      for update
-      using (bucket_id = 'exports' and owner_id = auth.uid())
-      with check (bucket_id = 'exports' and owner_id = auth.uid());
-  end if;
-end$$;
+    CREATE POLICY "Exports owner update/delete"
+      ON storage.objects
+      FOR UPDATE
+      USING (
+        bucket_id = 'exports' 
+        AND owner_id = auth.uid()::text
+      )
+      WITH CHECK (
+        bucket_id = 'exports' 
+        AND owner_id = auth.uid()::text
+      );
+  END IF;
+END$$;
