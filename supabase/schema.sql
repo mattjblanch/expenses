@@ -77,6 +77,7 @@ CREATE TABLE IF NOT EXISTS public.expenses (
   amount NUMERIC(12,2) NOT NULL,
   currency public.currency_code NOT NULL DEFAULT 'AUD',
   description TEXT,
+  vendor TEXT,
   category TEXT,
   export_id UUID,  -- Reference to export if needed
   receipt_url TEXT,
