@@ -32,11 +32,18 @@ export default async function DashboardPage() {
           <h2 className="font-semibold mb-2">Quick stats</h2>
           <p className="text-sm text-neutral-600">Month: {ym}</p>
           <p className="text-sm">Total: {total}</p>
-          <ul className="mt-2 space-y-1">
+          <ul className="mt-2 divide-y">
             {recent.map((e: any) => (
-              <li key={e.id}>
+              <li key={e.id} className="grid grid-cols-3 items-center py-2 gap-2">
+                <span>{e.vendor || e.description || '—'}</span>
                 <Link className="underline" href={`/expenses/${e.id}`}>
-                  {e.vendor || e.description || 'View expense'}
+                  {e.date?.slice(0, 10)}
+                </Link>
+                <Link
+                  className="underline justify-self-end"
+                  href={`/expenses/${e.id}`}
+                >
+                  {e.amount} {e.currency}
                 </Link>
               </li>
             ))}
