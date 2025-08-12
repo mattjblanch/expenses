@@ -43,8 +43,12 @@ export default async function DashboardPage() {
                 <Link className="underline" href={`/expenses/${e.id}`}>
                   {e.date?.slice(0, 10)}
                 </Link>
-                <span>{e.vendor || '—'}</span>
-                <span>{e.description || '—'}</span>
+                <Link className="underline" href={`/expenses/${e.id}`}>
+                  {e.vendor || '—'}
+                </Link>
+                <Link className="underline" href={`/expenses/${e.id}`}>
+                  {e.description || '—'}
+                </Link>
                 <Link
                   className="underline justify-self-end"
                   href={`/expenses/${e.id}`}
