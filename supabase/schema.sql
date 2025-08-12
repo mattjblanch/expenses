@@ -109,42 +109,52 @@ create policy "export_items owner all" on public.export_items for all using (
 -- select storage.create_bucket('receipts', true, false);
 -- select storage.create_bucket('exports',  true, false);
 
-drop policy if exists "receipts owner read" on storage.objects;
-drop policy if exists "receipts owner write" on storage.objects;
-drop policy if exists "receipts owner upd/del" on storage.objects;
+-- Policies below require the storage extension. Guard them so the schema can
+-- be applied even when the `storage.objects` table is absent.
+do $$
+begin
+  if exists (
+    select 1 from information_schema.tables
+    where table_schema = 'storage' and table_name = 'objects'
+  ) then
+    drop policy if exists "receipts owner read" on storage.objects;
+    drop policy if exists "receipts owner write" on storage.objects;
+    drop policy if exists "receipts owner upd/del" on storage.objects;
 
-create policy "receipts owner read"
-  on storage.objects
-  for select
-  using (bucket_id = 'receipts' and owner_id = auth.uid());
+    create policy "receipts owner read"
+      on storage.objects
+      for select
+      using (bucket_id = 'receipts' and owner_id = auth.uid());
 
-create policy "receipts owner write"
-  on storage.objects
-  for insert
-  with check (bucket_id = 'receipts' and owner_id = auth.uid());
+    create policy "receipts owner write"
+      on storage.objects
+      for insert
+      with check (bucket_id = 'receipts' and owner_id = auth.uid());
 
-create policy "receipts owner upd/del"
-  on storage.objects
-  for update
-  using (bucket_id = 'receipts' and owner_id = auth.uid())
-  with check (bucket_id = 'receipts' and owner_id = auth.uid());
+    create policy "receipts owner upd/del"
+      on storage.objects
+      for update
+      using (bucket_id = 'receipts' and owner_id = auth.uid())
+      with check (bucket_id = 'receipts' and owner_id = auth.uid());
 
-drop policy if exists "exports owner read" on storage.objects;
-drop policy if exists "exports owner write" on storage.objects;
-drop policy if exists "exports owner upd/del" on storage.objects;
+    drop policy if exists "exports owner read" on storage.objects;
+    drop policy if exists "exports owner write" on storage.objects;
+    drop policy if exists "exports owner upd/del" on storage.objects;
 
-create policy "exports owner read"
-  on storage.objects
-  for select
-  using (bucket_id = 'exports' and owner_id = auth.uid());
+    create policy "exports owner read"
+      on storage.objects
+      for select
+      using (bucket_id = 'exports' and owner_id = auth.uid());
 
-create policy "exports owner write"
-  on storage.objects
-  for insert
-  with check (bucket_id = 'exports' and owner_id = auth.uid());
+    create policy "exports owner write"
+      on storage.objects
+      for insert
+      with check (bucket_id = 'exports' and owner_id = auth.uid());
 
-create policy "exports owner upd/del"
-  on storage.objects
-  for update
-  using (bucket_id = 'exports' and owner_id = auth.uid())
-  with check (bucket_id = 'exports' and owner_id = auth.uid());
+    create policy "exports owner upd/del"
+      on storage.objects
+      for update
+      using (bucket_id = 'exports' and owner_id = auth.uid())
+      with check (bucket_id = 'exports' and owner_id = auth.uid());
+  end if;
+end$$;
