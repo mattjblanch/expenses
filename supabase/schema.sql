@@ -70,6 +70,48 @@ CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
+-- Accounts table
+CREATE TABLE IF NOT EXISTS public.accounts (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.accounts ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can view own accounts" ON public.accounts FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert own accounts" ON public.accounts FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can update own accounts" ON public.accounts FOR UPDATE USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can delete own accounts" ON public.accounts FOR DELETE USING (auth.uid() = user_id);
+
+-- Categories table
+CREATE TABLE IF NOT EXISTS public.categories (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.categories ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can view own categories" ON public.categories FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert own categories" ON public.categories FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can update own categories" ON public.categories FOR UPDATE USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can delete own categories" ON public.categories FOR DELETE USING (auth.uid() = user_id);
+
+-- Vendors table
+CREATE TABLE IF NOT EXISTS public.vendors (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.vendors ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can view own vendors" ON public.vendors FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert own vendors" ON public.vendors FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can update own vendors" ON public.vendors FOR UPDATE USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can delete own vendors" ON public.vendors FOR DELETE USING (auth.uid() = user_id);
+
 -- Expenses table creation
 CREATE TABLE IF NOT EXISTS public.expenses (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -79,6 +121,9 @@ CREATE TABLE IF NOT EXISTS public.expenses (
   description TEXT,
   vendor TEXT,
   category TEXT,
+  vendor_id UUID REFERENCES public.vendors(id),
+  category_id UUID REFERENCES public.categories(id),
+  account_id UUID REFERENCES public.accounts(id),
   export_id UUID,  -- Reference to export if needed
   receipt_url TEXT,
   date TIMESTAMPTZ DEFAULT NOW(),
