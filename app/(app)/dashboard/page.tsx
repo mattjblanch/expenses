@@ -27,7 +27,7 @@ export default async function DashboardPage() {
   return (
     <main className="container py-6">
       <UserHeader />
-      <div className="grid gap-3 md:grid-cols-2">
+      <div className="grid gap-3">
         <div className="card">
           <h2 className="font-semibold mb-2">Quick stats</h2>
           <p className="text-sm text-neutral-600">Month: {ym}</p>
@@ -42,10 +42,6 @@ export default async function DashboardPage() {
             ))}
           </ul>
           <a className="underline mt-2 inline-block" href="/expenses/new">Add expense</a>
-        </div>
-        <div className="card">
-          <h2 className="font-semibold mb-2">Exports</h2>
-          <a className="underline" href="/exports">View export history</a>
         </div>
       </div>
     </main>
