@@ -109,10 +109,42 @@ create policy "export_items owner all" on public.export_items for all using (
 -- select storage.create_bucket('receipts', true, false);
 -- select storage.create_bucket('exports',  true, false);
 
-create policy if not exists "receipts owner read" on storage.objects for select using (bucket_id = 'receipts' and owner_id = auth.uid());
-create policy if not exists "receipts owner write" on storage.objects for insert with check (bucket_id = 'receipts' and owner_id = auth.uid());
-create policy if not exists "receipts owner upd/del" on storage.objects for update using (bucket_id = 'receipts' and owner_id = auth.uid()) with check (bucket_id = 'receipts' and owner_id = auth.uid());
+drop policy if exists "receipts owner read" on storage.objects;
+drop policy if exists "receipts owner write" on storage.objects;
+drop policy if exists "receipts owner upd/del" on storage.objects;
 
-create policy if not exists "exports owner read" on storage.objects for select using (bucket_id = 'exports' and owner_id = auth.uid());
-create policy if not exists "exports owner write" on storage.objects for insert with check (bucket_id = 'exports' and owner_id = auth.uid());
-create policy if not exists "exports owner upd/del" on storage.objects for update using (bucket_id = 'exports' and owner_id = auth.uid()) with check (bucket_id = 'exports' and owner_id = auth.uid());
+create policy "receipts owner read"
+  on storage.objects
+  for select
+  using (bucket_id = 'receipts' and owner_id = auth.uid());
+
+create policy "receipts owner write"
+  on storage.objects
+  for insert
+  with check (bucket_id = 'receipts' and owner_id = auth.uid());
+
+create policy "receipts owner upd/del"
+  on storage.objects
+  for update
+  using (bucket_id = 'receipts' and owner_id = auth.uid())
+  with check (bucket_id = 'receipts' and owner_id = auth.uid());
+
+drop policy if exists "exports owner read" on storage.objects;
+drop policy if exists "exports owner write" on storage.objects;
+drop policy if exists "exports owner upd/del" on storage.objects;
+
+create policy "exports owner read"
+  on storage.objects
+  for select
+  using (bucket_id = 'exports' and owner_id = auth.uid());
+
+create policy "exports owner write"
+  on storage.objects
+  for insert
+  with check (bucket_id = 'exports' and owner_id = auth.uid());
+
+create policy "exports owner upd/del"
+  on storage.objects
+  for update
+  using (bucket_id = 'exports' and owner_id = auth.uid())
+  with check (bucket_id = 'exports' and owner_id = auth.uid());
