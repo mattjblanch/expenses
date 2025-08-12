@@ -2,6 +2,7 @@ import UserHeader from '@/components/UserHeader'
 import { serverClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import ExportsPane from './ExportsPane'
+import Link from 'next/link'
 
 export const revalidate = 0
 
@@ -22,13 +23,19 @@ export default async function ExpensesPage() {
         <h1 className="text-xl font-semibold">Expenses</h1>
         <ExportsPane />
       </div>
-      <div className="space-y-2">
+      <div className="divide-y">
         {(expenses ?? []).map((e: any) => (
-          <div key={e.id} className="card space-y-1">
-            <div>Vendor: {e.vendor || '—'}</div>
-            <div>Description: {e.description || '—'}</div>
-            <div>Amount: {e.amount} {e.currency}</div>
-            <div>Date: {e.date?.slice(0, 10)}</div>
+          <div
+            key={e.id}
+            className="grid grid-cols-3 items-center py-2 gap-4"
+          >
+            <span>{e.vendor || e.description || '—'}</span>
+            <Link className="underline" href={`/expenses/${e.id}`}>
+              {e.date?.slice(0, 10)}
+            </Link>
+            <Link className="underline justify-self-end" href={`/expenses/${e.id}`}>
+              {e.amount} {e.currency}
+            </Link>
           </div>
         ))}
       </div>
