@@ -124,7 +124,7 @@ begin
     create policy "receipts owner read"
       on storage.objects
       for select
-      using (bucket_id = 'receipts' and owner_id = auth.uid());
+      using (bucket_id = 'receipts' and owner_id = auth.uid()::text);
 
     create policy "receipts owner write"
       on storage.objects
