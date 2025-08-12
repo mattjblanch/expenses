@@ -33,8 +33,7 @@ export async function middleware(req: NextRequest) {
     url.pathname.startsWith('/expenses') ||
     url.pathname.startsWith('/categories') ||
     url.pathname.startsWith('/accounts') ||
-    url.pathname.startsWith('/settings') ||
-    url.pathname.startsWith('/exports')
+    url.pathname.startsWith('/settings')
 
   if (isProtected && !session) {
     const loginUrl = new URL('/login', req.url)
