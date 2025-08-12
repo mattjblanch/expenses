@@ -5,6 +5,11 @@ import Link from 'next/link'
 
 export const revalidate = 0
 
+const aud = new Intl.NumberFormat('en-AU', {
+  style: 'currency',
+  currency: 'AUD',
+})
+
 export default async function DashboardPage() {
   const supabase = serverClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -34,16 +39,17 @@ export default async function DashboardPage() {
           <p className="text-sm">Total: {total}</p>
           <ul className="mt-2 divide-y">
             {recent.map((e: any) => (
-              <li key={e.id} className="grid grid-cols-3 items-center py-2 gap-2">
-                <span>{e.vendor || e.description || '—'}</span>
+              <li key={e.id} className="grid grid-cols-4 items-center py-2 gap-2">
                 <Link className="underline" href={`/expenses/${e.id}`}>
                   {e.date?.slice(0, 10)}
                 </Link>
+                <span>{e.vendor || '—'}</span>
+                <span>{e.description || '—'}</span>
                 <Link
                   className="underline justify-self-end"
                   href={`/expenses/${e.id}`}
                 >
-                  {e.amount} {e.currency}
+                  {aud.format(e.amount)}
                 </Link>
               </li>
             ))}
