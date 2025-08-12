@@ -13,7 +13,7 @@ export default async function ExpensePage({ params }: { params: { id: string } }
       <h1 className="text-xl font-semibold mb-4">Expense</h1>
       <div className="card space-y-2">
         <p>Amount: {data.amount} {data.currency}</p>
-        <p>Date: {data.occurred_on?.slice(0, 10)}</p>
+        <p>Date: {data.date?.slice(0, 10)}</p>
         {data.vendor && <p>Vendor: {data.vendor}</p>}
         {data.description && <p>Description: {data.description}</p>}
       </div>

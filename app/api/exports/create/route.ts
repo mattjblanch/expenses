@@ -19,10 +19,10 @@ export async function POST(req: Request) {
   const end = month + '-31'
 
   let q = supabase.from('expenses')
-    .select('id, amount, currency, occurred_on, description, category_id, account_id, receipt_path, is_exported')
+    .select('id, amount, currency, date, description, vendor, category, receipt_url, export_id')
     .eq('user_id', user.id)
-    .gte('occurred_on', start).lte('occurred_on', end)
-  if (!includeExported) q = q.eq('is_exported', false)
+    .gte('date', start).lte('date', end)
+  if (!includeExported) q = q.is('export_id', null)
   const { data: expenses, error } = await q
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
@@ -44,10 +44,10 @@ export async function POST(req: Request) {
   const receiptsFolder = folder.folder('receipts')!
 
   for (const e of expenses || []) {
-    if (e.receipt_path) {
-      const { data: file } = await supabase.storage.from('receipts').download(e.receipt_path)
+    if (e.receipt_url) {
+      const { data: file } = await supabase.storage.from('receipts').download(e.receipt_url)
       if (file) {
-        const parts = e.receipt_path.split('/')
+        const parts = e.receipt_url.split('/')
         const filename = parts[parts.length-1]
         receiptsFolder.file(`${e.id}-${sanitize(filename)}`, Buffer.from(await file.arrayBuffer()))
       }
@@ -71,7 +71,7 @@ export async function POST(req: Request) {
 
   // mark expenses exported
   if (expenses && expenses.length) {
-    await supabase.from('expenses').update({ is_exported: true, export_id: created.id }).in('id', expenses.map((e:any)=> e.id))
+    await supabase.from('expenses').update({ export_id: created.id }).in('id', expenses.map((e:any)=> e.id))
   }
 
   const { data: urlData } = await supabase.storage.from('exports').createSignedUrl(filePath, 60)
