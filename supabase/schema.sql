@@ -47,6 +47,18 @@ create table if not exists public.accounts (
   unique(user_id, name)
 );
 
+create table if not exists public.exports (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  period_start date not null,
+  period_end date not null,
+  file_path text not null,
+  total_amount numeric(14,2) not null default 0,
+  currency text not null default 'AUD',
+  items_count integer not null default 0,
+  created_at timestamptz default now()
+);
+
 create table if not exists public.expenses (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
@@ -65,18 +77,6 @@ create table if not exists public.expenses (
 
 create index if not exists expenses_user_date_idx on public.expenses(user_id, occurred_on desc);
 create index if not exists expenses_user_export_idx on public.expenses(user_id, is_exported);
-
-create table if not exists public.exports (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users(id) on delete cascade,
-  period_start date not null,
-  period_end date not null,
-  file_path text not null,
-  total_amount numeric(14,2) not null default 0,
-  currency text not null default 'AUD',
-  items_count integer not null default 0,
-  created_at timestamptz default now()
-);
 
 create table if not exists public.export_items (
   export_id uuid not null references public.exports(id) on delete cascade,
