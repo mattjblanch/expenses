@@ -48,7 +48,12 @@ export default async function DashboardPage() {
               </li>
             ))}
           </ul>
-          <a className="underline mt-2 inline-block" href="/expenses/new">Add expense</a>
+          <Link
+            href="/expenses/new"
+            className="bg-black text-white py-2 rounded-md block text-center mt-2"
+          >
+            Add expense
+          </Link>
         </div>
       </div>
     </main>
