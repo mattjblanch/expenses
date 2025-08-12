@@ -16,15 +16,20 @@ export default function NewExpensePage() {
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) return;
-    const { error } = await supabase.from("expenses").insert({
-      user_id: user.id,
-      amount: Number(amount || 0),
-      currency,
-      date,
-      description,
-      vendor,
+
+    const res = await fetch("/api/expenses", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        amount: Number(amount || 0),
+        currency,
+        date,
+        description,
+        vendor,
+      }),
     });
-    if (!error) router.push("/dashboard");
+
+    if (res.ok) router.push("/dashboard");
   };
 
   return (
