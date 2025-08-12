@@ -1,6 +1,9 @@
 import UserHeader from '@/components/UserHeader'
 import { serverClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import Link from 'next/link'
+
+export const revalidate = 0
 
 export default async function DashboardPage() {
   const supabase = serverClient()
@@ -8,7 +11,18 @@ export default async function DashboardPage() {
   if (!user) redirect('/login')
 
   const ym = new Date().toISOString().slice(0,7)
-  const { data: totals } = await supabase.rpc('get_month_totals', { ym }) // optional if you add such a RPC; ignore failure
+  const start = ym + '-01'
+  const end = ym + '-31'
+  const { data: monthExpenses } = await supabase
+    .from('expenses')
+    .select('id, description, vendor, amount, currency, occurred_on')
+    .eq('user_id', user.id)
+    .gte('occurred_on', start)
+    .lte('occurred_on', end)
+    .order('occurred_on', { ascending: false })
+
+  const total = monthExpenses?.reduce((sum: number, e: any) => sum + e.amount, 0) ?? 0
+  const recent = monthExpenses?.slice(0,5) ?? []
 
   return (
     <main className="container py-6">
@@ -17,7 +31,16 @@ export default async function DashboardPage() {
         <div className="card">
           <h2 className="font-semibold mb-2">Quick stats</h2>
           <p className="text-sm text-neutral-600">Month: {ym}</p>
-          <p className="text-sm">Total: {totals?.total ?? 0}</p>
+          <p className="text-sm">Total: {total}</p>
+          <ul className="mt-2 space-y-1">
+            {recent.map((e: any) => (
+              <li key={e.id}>
+                <Link className="underline" href={`/expenses/${e.id}`}>
+                  {e.vendor || e.description || 'View expense'}
+                </Link>
+              </li>
+            ))}
+          </ul>
           <a className="underline mt-2 inline-block" href="/expenses/new">Add expense</a>
         </div>
         <div className="card">
