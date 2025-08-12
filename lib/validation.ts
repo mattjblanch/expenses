@@ -5,6 +5,7 @@ export const expenseSchema = z.object({
   currency: z.string().length(3).transform((s) => s.toUpperCase()),
   occurred_on: z.string(), // 'YYYY-MM-DD'
   description: z.string().max(500).optional().nullable(),
+  vendor: z.string().max(200).optional().nullable(),
   category_id: z.string().uuid().optional().nullable(),
   account_id: z.string().uuid().optional().nullable(),
   receipt_filename: z.string().optional().nullable(),
