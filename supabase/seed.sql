@@ -1,0 +1,3 @@
+-- Optional seed (example only)
+-- insert into categories (user_id, name) values ('00000000-0000-0000-0000-000000000000', 'Meals');
+-- insert into accounts (user_id, name) values ('00000000-0000-0000-0000-000000000000', 'Corporate Card');

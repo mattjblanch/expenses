@@ -1,0 +1,60 @@
+# Node / package managers
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-debug.log*
+
+# Build output
+.next/
+.next/cache/
+out/
+dist/
+.turbo/
+
+# TypeScript
+*.tsbuildinfo
+
+# Lint cache
+.eslintcache
+
+# Env files (keep example tracked)
+.env
+.env.*
+!.env.example
+
+# Vercel local config
+.vercel/
+
+# Coverage / test artifacts
+coverage/
+*.lcov
+
+# OS cruft
+.DS_Store
+.DS_Store?
+Thumbs.db
+Desktop.ini
+
+# Editor junk
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+.idea/
+
+# Supabase CLI internals (keep schema/migrations)
+supabase/.temp/
+supabase/.branches/
+
+# Logs
+logs/
+*.log
+
+# Swap / lock files
+*.swp
+*.swo
+*.lock-wscript
+
+# Misc caches
+.cache/
