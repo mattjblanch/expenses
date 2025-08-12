@@ -20,7 +20,7 @@ export default function NewExpensePage() {
       user_id: user.id,
       amount: Number(amount || 0),
       currency,
-      occurred_on: date,
+      date,
       description,
       vendor,
     });

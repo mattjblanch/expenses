@@ -15,10 +15,10 @@ export async function GET(req: Request) {
 
   const { data, error } = await supabase
     .from('expenses')
-    .select('id, amount, currency, occurred_on, description, receipt_path, is_exported, export_id')
+    .select('id, amount, currency, date, description, vendor, category, receipt_url, export_id')
     .eq('user_id', user.id)
-    .gte('occurred_on', start).lte('occurred_on', end)
-    .order('occurred_on', { ascending: true })
+    .gte('date', start).lte('date', end)
+    .order('date', { ascending: true })
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
   const csv = toCsv((data || []).map((r:any)=>({ ...r })))

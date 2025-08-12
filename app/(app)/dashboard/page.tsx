@@ -15,11 +15,11 @@ export default async function DashboardPage() {
   const end = ym + '-31'
   const { data: monthExpenses } = await supabase
     .from('expenses')
-    .select('id, description, vendor, amount, currency, occurred_on')
+    .select('id, description, vendor, amount, currency, date')
     .eq('user_id', user.id)
-    .gte('occurred_on', start)
-    .lte('occurred_on', end)
-    .order('occurred_on', { ascending: false })
+    .gte('date', start)
+    .lte('date', end)
+    .order('date', { ascending: false })
 
   const total = monthExpenses?.reduce((sum: number, e: any) => sum + e.amount, 0) ?? 0
   const recent = monthExpenses?.slice(0,5) ?? []

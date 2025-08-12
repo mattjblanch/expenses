@@ -3,7 +3,7 @@ import { z } from 'zod'
 export const expenseSchema = z.object({
   amount: z.number().nonnegative(),
   currency: z.string().length(3).transform((s) => s.toUpperCase()),
-  occurred_on: z.string(), // 'YYYY-MM-DD'
+  date: z.string(), // 'YYYY-MM-DD'
   description: z.string().max(500).optional().nullable(),
   vendor: z.string().max(200).optional().nullable(),
   category_id: z.string().uuid().optional().nullable(),

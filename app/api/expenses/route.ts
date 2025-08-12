@@ -10,13 +10,13 @@ export async function GET(req: Request) {
   const month = url.searchParams.get('month')
   const includeExported = url.searchParams.get('includeExported') === 'true'
 
-  let query = supabase.from('expenses').select('*').eq('user_id', user.id).order('occurred_on', { ascending: false })
+  let query = supabase.from('expenses').select('*').eq('user_id', user.id).order('date', { ascending: false })
   if (month) {
     const start = month + '-01'
     const end = month + '-31'
-    query = query.gte('occurred_on', start).lte('occurred_on', end)
+    query = query.gte('date', start).lte('date', end)
   }
-  if (!includeExported) query = query.eq('is_exported', false)
+  if (!includeExported) query = query.is('export_id', null)
   const { data, error } = await query
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json(data)
