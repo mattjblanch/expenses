@@ -34,23 +34,20 @@ export default async function DashboardPage() {
           <h2 className="font-semibold mb-2">Unclaimed Expenses</h2>
           <p className="text-sm">Total value: {aud.format(total)}</p>
           <p className="text-sm">Total expenses: {count}</p>
-          <ul className="mt-2 divide-y">
+          <ul className="mt-2 grid gap-3">
             {list.map((e: any) => (
-              <li key={e.id} className="grid grid-cols-4 items-center py-2 gap-2">
-                <Link className="underline" href={`/expenses/${e.id}`}>
-                  {e.date?.slice(0, 10)}
-                </Link>
-                <Link className="underline" href={`/expenses/${e.id}`}>
-                  {e.vendor || '—'}
-                </Link>
-                <Link className="underline" href={`/expenses/${e.id}`}>
-                  {e.description || '—'}
-                </Link>
-                <Link
-                  className="underline justify-self-end"
-                  href={`/expenses/${e.id}`}
-                >
-                  {aud.format(e.amount)}
+              <li key={e.id}>
+                <Link href={`/expenses/${e.id}`} className="card block">
+                  <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-sm">
+                    <span className="font-semibold">Date</span>
+                    <span>{e.date?.slice(0, 10)}</span>
+                    <span className="font-semibold">Vendor</span>
+                    <span>{e.vendor || '—'}</span>
+                    <span className="font-semibold">Description</span>
+                    <span>{e.description || '—'}</span>
+                    <span className="font-semibold">Amount</span>
+                    <span className="justify-self-end">{aud.format(e.amount)}</span>
+                  </div>
                 </Link>
               </li>
             ))}
