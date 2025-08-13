@@ -17,14 +17,17 @@ export default function NewExpensePage() {
     } = await supabase.auth.getUser();
     if (!user) return;
 
+    const parsedAmount = parseFloat(amount);
+    const parsedDate = new Date(date);
+
     const res = await fetch("/api/expenses", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        amount: Number(amount || 0),
+        amount: isNaN(parsedAmount) ? 0 : parsedAmount,
         currency,
         // ensure the date is in ISO format to satisfy the API/DB
-        date: new Date(date).toISOString(),
+        date: isNaN(parsedDate.getTime()) ? new Date().toISOString() : parsedDate.toISOString(),
         description,
         vendor,
       }),
@@ -32,7 +35,12 @@ export default function NewExpensePage() {
       credentials: "include",
     });
 
-    if (res.ok) router.push("/dashboard");
+    if (res.ok) {
+      router.push("/dashboard");
+    } else {
+      // surface error for easier debugging
+      console.error("Failed to save expense", await res.json());
+    }
   };
 
   return (
