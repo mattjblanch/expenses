@@ -243,7 +243,6 @@ export default function EditExpensePage({ params }: { params: { id: string } }) 
         <input
           type="file"
           accept="image/*"
-          capture="environment"
           onChange={(e) => setReceiptFile(e.target.files?.[0] || null)}
         />
         <div className="flex gap-2">

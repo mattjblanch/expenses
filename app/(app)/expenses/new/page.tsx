@@ -143,7 +143,6 @@ export default function NewExpensePage() {
           <input
             type="file"
             accept="image/*"
-            capture="environment"
             onChange={(e) => setReceiptFile(e.target.files?.[0] || null)}
           />
           {receiptFile && (
