@@ -150,7 +150,7 @@ export default function EditExpensePage({ params }: { params: { id: string } }) 
           <button
             onClick={remove}
             disabled={!!exportId}
-            className="bg-red-600 text-white py-2 rounded-md disabled:opacity-50"
+            className="bg-red-600 text-white py-2 px-4 rounded-md disabled:opacity-50 w-fit"
           >
             Delete
           </button>
