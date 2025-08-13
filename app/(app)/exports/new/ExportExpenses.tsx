@@ -37,8 +37,8 @@ export default function ExportExpenses({ initialExpenses, userEmail }:{ initialE
         <div className="max-h-64 overflow-y-auto divide-y">
           {initialExpenses.map(e => (
             <label key={e.id} className="flex items-center gap-2 py-2 text-sm">
-              <input type="checkbox" checked={selected.includes(e.id)} onChange={()=> toggle(e.id)} />
-              <span className="flex-1">{e.date?.slice(0,10)} — {e.vendor || '—'} — {e.description || '—'} — {e.amount} {e.currency}</span>
+              <input type="checkbox" checked={selected.includes(e.id)} onChange={() => toggle(e.id)} />
+              <span className="flex-1">{e.vendor || '—'} — {e.category || '—'} — {e.amount} {e.currency}</span>
             </label>
           ))}
           {!initialExpenses.length && <p className="text-sm text-neutral-600">No expenses available</p>}
