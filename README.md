@@ -5,7 +5,7 @@ Mobile-first expense tracker scaffold built with Next.js (App Router) + TypeScri
 ## Quick start
 
 1. **Create a Supabase project**, then copy Project URL + anon key + service role key.
-2. `cp .env.example .env.local` and fill values.
+2. `cp .env.example .env.local` and fill values, including `OPENAI_API_KEY` for receipt extraction.
 3. In Supabase SQL Editor, run the contents of `/supabase/schema.sql`.
 4. Create private Storage buckets `receipts` and `exports` (or run the SQL commented at the bottom of the schema).
 5. In Supabase **Auth → Providers**, enable **Email** and **GitHub**. Set redirect URL to `NEXT_PUBLIC_SITE_URL` + `/auth/callback`.
