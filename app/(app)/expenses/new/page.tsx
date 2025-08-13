@@ -18,6 +18,60 @@ export default function NewExpensePage() {
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const router = useRouter();
 
+  const handleCategoryChange = async (
+    e: React.ChangeEvent<HTMLSelectElement>
+  ) => {
+    const value = e.target.value;
+    if (value !== "__add_new_category__") {
+      setCategory(value);
+      return;
+    }
+    const name = prompt("New category name");
+    if (!name) return;
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return;
+    const { data, error } = await supabase
+      .from("categories")
+      .insert({ name, user_id: user.id })
+      .select("name")
+      .single();
+    if (error || !data) {
+      console.error("Failed to add category", error);
+      return;
+    }
+    setCategories((prev) => [...prev, data.name].sort());
+    setCategory(data.name);
+  };
+
+  const handleAccountChange = async (
+    e: React.ChangeEvent<HTMLSelectElement>
+  ) => {
+    const value = e.target.value;
+    if (value !== "__add_new_account__") {
+      setAccount(value);
+      return;
+    }
+    const name = prompt("New account name");
+    if (!name) return;
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return;
+    const { data, error } = await supabase
+      .from("accounts")
+      .insert({ name, user_id: user.id })
+      .select("name")
+      .single();
+    if (error || !data) {
+      console.error("Failed to add account", error);
+      return;
+    }
+    setAccounts((prev) => [...prev, data.name].sort());
+    setAccount(data.name);
+  };
+
   const extract = async () => {
     if (!receiptFile) return;
 
@@ -212,19 +266,21 @@ export default function NewExpensePage() {
             <option key={v} value={v} />
           ))}
         </datalist>
-        <select value={category} onChange={(e) => setCategory(e.target.value)}>
+        <select value={category} onChange={handleCategoryChange}>
           {categories.map((c) => (
             <option key={c} value={c}>
               {c}
             </option>
           ))}
+          <option value="__add_new_category__">Add new category</option>
         </select>
-        <select value={account} onChange={(e) => setAccount(e.target.value)}>
+        <select value={account} onChange={handleAccountChange}>
           {accounts.map((a) => (
             <option key={a} value={a}>
               {a}
             </option>
           ))}
+          <option value="__add_new_account__">Add new account</option>
         </select>
         <input
           placeholder="Description"
