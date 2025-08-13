@@ -1,6 +1,15 @@
+-- Ensure Supabase roles can access the public schema and its objects
+GRANT USAGE ON SCHEMA public TO postgres, anon, authenticated, service_role;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO postgres, anon, authenticated, service_role;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO postgres, anon, authenticated, service_role;
+GRANT ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA public TO postgres, anon, authenticated, service_role;
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL PRIVILEGES ON TABLES TO postgres, anon, authenticated, service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL PRIVILEGES ON SEQUENCES TO postgres, anon, authenticated, service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL PRIVILEGES ON FUNCTIONS TO postgres, anon, authenticated, service_role;
+
 -- Create a predefined set of currencies
 CREATE TYPE public.currency_code AS ENUM ('AUD', 'NZD', 'USD', 'EUR', 'GBP', 'CAD', 'JPY');
-
 -- Create extension for UUID generation and cryptographic functions
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
