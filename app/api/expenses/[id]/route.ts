@@ -5,7 +5,12 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
   const supabase = serverClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return new NextResponse('Unauthorized', { status: 401 })
-  const { data, error } = await supabase.from('expenses').select('*').eq('id', params.id).eq('user_id', user.id).single()
+  const { data, error } = await supabase
+    .from('expenses')
+    .select('*, account:accounts(name)')
+    .eq('id', params.id)
+    .eq('user_id', user.id)
+    .single()
   if (error) return NextResponse.json({ error: error.message }, { status: 404 })
   return NextResponse.json(data)
 }
@@ -52,11 +57,40 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     }
   }
 
+  let account_id: string | null = null
+  if (body.account && String(body.account).trim() !== '') {
+    const { data: existingAccount, error: accountFetchError } = await supabase
+      .from('accounts')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('name', body.account)
+      .maybeSingle()
+    if (accountFetchError) {
+      return NextResponse.json({ error: accountFetchError.message }, { status: 400 })
+    }
+    if (existingAccount) {
+      account_id = existingAccount.id
+    } else {
+      const { data: newAccount, error: accountInsertError } = await supabase
+        .from('accounts')
+        .insert({ name: body.account, user_id: user.id })
+        .select('id')
+        .single()
+      if (accountInsertError) {
+        return NextResponse.json({ error: accountInsertError.message }, { status: 400 })
+      }
+      account_id = newAccount.id
+    }
+  }
+
   const update = {
-    ...body,
     amount,
+    currency: body.currency,
     date: dateObj.toISOString(),
+    description: body.description,
+    vendor: body.vendor,
     vendor_id,
+    account_id,
   }
   const { data, error } = await supabase
     .from('expenses')
