@@ -31,7 +31,12 @@ export default function NewExpensePage() {
       const data = await res.json();
       if (data.amount) setAmount(data.amount.toString());
       if (data.currency) setCurrency(data.currency.toUpperCase());
-      if (data.date) setDate(data.date.slice(0, 10));
+      if (data.date) {
+        setDate(data.date.slice(0, 10));
+      } else {
+        // reset to today's date if none found on the receipt
+        setDate(new Date().toISOString().slice(0, 10));
+      }
       if (data.description) setDescription(data.description);
       if (data.vendor) setVendor(data.vendor);
     } catch (err) {
