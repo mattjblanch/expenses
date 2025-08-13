@@ -123,6 +123,24 @@ CREATE POLICY "Users can insert own vendors" ON public.vendors FOR INSERT WITH C
 CREATE POLICY "Users can update own vendors" ON public.vendors FOR UPDATE USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "Users can delete own vendors" ON public.vendors FOR DELETE USING (auth.uid() = user_id);
 
+-- Exports table
+CREATE TABLE IF NOT EXISTS public.exports (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  period_start TIMESTAMPTZ,
+  period_end TIMESTAMPTZ,
+  file_path TEXT NOT NULL,
+  total_amount NUMERIC(12,2) DEFAULT 0,
+  currency public.currency_code NOT NULL DEFAULT 'AUD',
+  items_count INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.exports ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can view own exports" ON public.exports FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert own exports" ON public.exports FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can delete own exports" ON public.exports FOR DELETE USING (auth.uid() = user_id);
+
 -- Expenses table creation
 CREATE TABLE IF NOT EXISTS public.expenses (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -135,7 +153,7 @@ CREATE TABLE IF NOT EXISTS public.expenses (
   vendor_id UUID REFERENCES public.vendors(id),
   category_id UUID REFERENCES public.categories(id),
   account_id UUID REFERENCES public.accounts(id),
-  export_id UUID,  -- Reference to export if needed
+  export_id UUID REFERENCES public.exports(id),  -- Reference to export
   receipt_url TEXT,
   date TIMESTAMPTZ DEFAULT NOW(),
   created_at TIMESTAMPTZ DEFAULT NOW(),
