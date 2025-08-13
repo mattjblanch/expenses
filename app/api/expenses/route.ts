@@ -40,11 +40,38 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Invalid date' }, { status: 400 })
   }
 
+  let vendor_id: string | null = null
+  if (body.vendor && String(body.vendor).trim() !== '') {
+    const { data: existingVendor, error: vendorFetchError } = await supabase
+      .from('vendors')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('name', body.vendor)
+      .maybeSingle()
+    if (vendorFetchError) {
+      return NextResponse.json({ error: vendorFetchError.message }, { status: 400 })
+    }
+    if (existingVendor) {
+      vendor_id = existingVendor.id
+    } else {
+      const { data: newVendor, error: vendorInsertError } = await supabase
+        .from('vendors')
+        .insert({ name: body.vendor, user_id: user.id })
+        .select('id')
+        .single()
+      if (vendorInsertError) {
+        return NextResponse.json({ error: vendorInsertError.message }, { status: 400 })
+      }
+      vendor_id = newVendor.id
+    }
+  }
+
   const insert = {
     ...body,
     amount,
     date: dateObj.toISOString(),
     user_id: user.id,
+    vendor_id,
   }
   const { data, error } = await supabase.from('expenses').insert(insert).select().single()
   if (error) return NextResponse.json({ error: error.message }, { status: 400 })
