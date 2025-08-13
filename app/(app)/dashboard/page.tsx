@@ -39,14 +39,10 @@ export default async function DashboardPage() {
               <li key={e.id}>
                 <Link href={`/expenses/${e.id}`} className="card block">
                   <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-sm">
-                    <span className="font-semibold">Date</span>
                     <span>{e.date?.slice(0, 10)}</span>
-                    <span className="font-semibold">Vendor</span>
-                    <span>{e.vendor || '—'}</span>
-                    <span className="font-semibold">Description</span>
-                    <span>{e.description || '—'}</span>
-                    <span className="font-semibold">Amount</span>
                     <span className="justify-self-end">{aud.format(e.amount)}</span>
+                    <span className="col-span-2">{e.vendor || '—'}</span>
+                    <span className="col-span-2">{e.description || '—'}</span>
                   </div>
                 </Link>
               </li>
