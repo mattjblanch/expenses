@@ -19,6 +19,9 @@ export default function EditExpensePage({ params }: { params: { id: string } }) 
   const [account, setAccount] = useState("");
   const [accounts, setAccounts] = useState<string[]>([]);
   const [exportId, setExportId] = useState<string | null>(null);
+  const [receiptUrl, setReceiptUrl] = useState<string | null>(null);
+  const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const [signedUrl, setSignedUrl] = useState<string | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -51,6 +54,7 @@ export default function EditExpensePage({ params }: { params: { id: string } }) 
       setAccount(data.account?.name || "");
       setDescription(data.description || "");
       setExportId(data.export_id || null);
+      setReceiptUrl(data.receipt_url || null);
     };
     load();
   }, [id, router]);
@@ -78,6 +82,20 @@ export default function EditExpensePage({ params }: { params: { id: string } }) 
     loadData();
   }, []);
 
+  useEffect(() => {
+    const createSigned = async () => {
+      if (receiptUrl) {
+        const { data } = await supabase.storage
+          .from("receipts")
+          .createSignedUrl(receiptUrl, 60);
+        setSignedUrl(data?.signedUrl || null);
+      } else {
+        setSignedUrl(null);
+      }
+    };
+    createSigned();
+  }, [receiptUrl]);
+
   const submit = async () => {
     const {
       data: { user },
@@ -85,7 +103,20 @@ export default function EditExpensePage({ params }: { params: { id: string } }) 
     if (!user) return;
 
     const parsedAmount = parseFloat(amount);
-    const parsedDate = new Date(date);
+   const parsedDate = new Date(date);
+    let newReceiptUrl = receiptUrl;
+    if (receiptFile) {
+      const fileExt = receiptFile.name.split(".").pop() || "jpg";
+      const filePath = `${user.id}/${Date.now()}.${fileExt}`;
+      const { error: uploadError } = await supabase.storage
+        .from("receipts")
+        .upload(filePath, receiptFile);
+      if (uploadError) {
+        console.error("Failed to upload receipt", uploadError);
+      } else {
+        newReceiptUrl = filePath;
+      }
+    }
 
     const res = await fetch(`/api/expenses/${id}`, {
       method: "PATCH",
@@ -100,6 +131,7 @@ export default function EditExpensePage({ params }: { params: { id: string } }) 
         vendor,
         category,
         account,
+        receipt_url: newReceiptUrl,
       }),
       credentials: "include",
     });
@@ -187,6 +219,22 @@ export default function EditExpensePage({ params }: { params: { id: string } }) 
           placeholder="Description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
+        />
+        {signedUrl && (
+          <a
+            href={signedUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="underline"
+          >
+            View current receipt
+          </a>
+        )}
+        <input
+          type="file"
+          accept="image/*"
+          capture="environment"
+          onChange={(e) => setReceiptFile(e.target.files?.[0] || null)}
         />
         <div className="flex gap-2">
           <button

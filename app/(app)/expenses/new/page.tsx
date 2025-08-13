@@ -14,6 +14,7 @@ export default function NewExpensePage() {
   const [categories, setCategories] = useState<string[]>([]);
   const [account, setAccount] = useState("");
   const [accounts, setAccounts] = useState<string[]>([]);
+  const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -62,6 +63,19 @@ export default function NewExpensePage() {
 
     const parsedAmount = parseFloat(amount);
     const parsedDate = new Date(date);
+    let receipt_url: string | null = null;
+    if (receiptFile) {
+      const fileExt = receiptFile.name.split(".").pop() || "jpg";
+      const filePath = `${user.id}/${Date.now()}.${fileExt}`;
+      const { error: uploadError } = await supabase.storage
+        .from("receipts")
+        .upload(filePath, receiptFile);
+      if (uploadError) {
+        console.error("Failed to upload receipt", uploadError);
+      } else {
+        receipt_url = filePath;
+      }
+    }
 
     const res = await fetch("/api/expenses", {
       method: "POST",
@@ -75,6 +89,7 @@ export default function NewExpensePage() {
         vendor,
         category,
         account,
+        receipt_url,
       }),
       // send authentication cookies with the request
       credentials: "include",
@@ -137,6 +152,12 @@ export default function NewExpensePage() {
           placeholder="Description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
+        />
+        <input
+          type="file"
+          accept="image/*"
+          capture="environment"
+          onChange={(e) => setReceiptFile(e.target.files?.[0] || null)}
         />
         <button onClick={submit} className="bg-black text-white py-2 rounded-md">
           Save
