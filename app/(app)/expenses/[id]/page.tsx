@@ -13,6 +13,7 @@ export default function EditExpensePage({ params }: { params: { id: string } }) 
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [description, setDescription] = useState("");
   const [vendor, setVendor] = useState("");
+  const [exportId, setExportId] = useState<string | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -34,10 +35,15 @@ export default function EditExpensePage({ params }: { params: { id: string } }) 
         return;
       }
       setAmount(String(data.amount ?? ""));
-      setCurrency(data.currency || process.env.NEXT_PUBLIC_DEFAULT_CURRENCY || "AUD");
-      setDate(data.date?.slice(0, 10) || new Date().toISOString().slice(0, 10));
+      setCurrency(
+        data.currency || process.env.NEXT_PUBLIC_DEFAULT_CURRENCY || "AUD"
+      );
+      setDate(
+        data.date?.slice(0, 10) || new Date().toISOString().slice(0, 10)
+      );
       setVendor(data.vendor || "");
       setDescription(data.description || "");
+      setExportId(data.export_id || null);
     };
     load();
   }, [id, router]);
@@ -56,6 +62,22 @@ export default function EditExpensePage({ params }: { params: { id: string } }) 
         description,
         vendor,
       })
+      .eq("id", id)
+      .eq("user_id", user.id);
+    if (!error) router.push("/expenses");
+  };
+
+  const remove = async () => {
+    if (exportId) return;
+    const confirmDelete = confirm("Delete this expense?");
+    if (!confirmDelete) return;
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return;
+    const { error } = await supabase
+      .from("expenses")
+      .delete()
       .eq("id", id)
       .eq("user_id", user.id);
     if (!error) router.push("/expenses");
@@ -90,12 +112,21 @@ export default function EditExpensePage({ params }: { params: { id: string } }) 
           value={description}
           onChange={(e) => setDescription(e.target.value)}
         />
-        <button
-          onClick={submit}
-          className="bg-black text-white py-2 rounded-md"
-        >
-          Save
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={remove}
+            disabled={!!exportId}
+            className="bg-red-600 text-white py-2 rounded-md disabled:opacity-50"
+          >
+            Delete
+          </button>
+          <button
+            onClick={submit}
+            className="bg-black text-white py-2 rounded-md"
+          >
+            Save
+          </button>
+        </div>
       </div>
     </main>
   );
