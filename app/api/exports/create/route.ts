@@ -28,6 +28,7 @@ export async function POST(req: Request) {
         .select('id, amount, currency, date, description, vendor, category, receipt_url, export_id')
         .eq('user_id', user.id)
         .in('id', ids)
+        .order('date', { ascending: true })
       if (error) {
         console.error('Failed to load expenses for export', error)
         return NextResponse.json({ error: error.message }, { status: 500 })
@@ -46,6 +47,7 @@ export async function POST(req: Request) {
         .eq('user_id', user.id)
         .gte('date', start).lte('date', end)
       if (!includeExported) q = q.is('export_id', null)
+      q = q.order('date', { ascending: true })
       const { data, error } = await q
       if (error) {
         console.error('Failed to load expenses for export', error)
@@ -63,10 +65,13 @@ export async function POST(req: Request) {
       appName: process.env.NEXT_PUBLIC_APP_NAME || 'SpendWise',
       userEmail: user.email || '',
       periodLabel,
-      totals: { total, currency: chosenCurrency, count: expenses?.length || 0 }
+      totals: { total, currency: chosenCurrency, count: expenses?.length || 0 },
+      expenses: expenses || []
     })
-
     const receiptsZip = new JSZip()
+    const zip = new JSZip()
+    const folder = zip.folder(`export`)!
+    const receiptsFolder = folder.folder('receipts')!
 
     for (const e of expenses || []) {
       if (e.receipt_url) {
@@ -74,18 +79,17 @@ export async function POST(req: Request) {
         if (file) {
           const parts = e.receipt_url.split('/')
           const filename = parts[parts.length-1]
-          receiptsZip.file(`${e.id}-${sanitize(filename)}`, Buffer.from(await file.arrayBuffer()))
+          const buffer = Buffer.from(await file.arrayBuffer())
+          receiptsZip.file(`${e.id}-${sanitize(filename)}`, buffer)
+          receiptsFolder.file(`${e.id}-${sanitize(filename)}`, buffer)
         }
       }
     }
 
     const receiptsZipBytes = await receiptsZip.generateAsync({ type: 'uint8array' })
 
-    const zip = new JSZip()
-    const folder = zip.folder(`export`)!
     folder.file(`expenses.csv`, csv)
     folder.file(`expense-form.pdf`, pdfBytes)
-    folder.file('receipts.zip', receiptsZipBytes)
     const zipBytes = await zip.generateAsync({ type: 'uint8array' })
     const filePath = `exports/${user.id}/${Date.now()}.zip`
     await supabase.storage.from('exports').upload(filePath, zipBytes, { contentType: 'application/zip', upsert: true })
