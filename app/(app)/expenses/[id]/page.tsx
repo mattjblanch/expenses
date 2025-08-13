@@ -24,6 +24,87 @@ export default function EditExpensePage({ params }: { params: { id: string } }) 
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
 
+  const handleVendorChange = async (
+    e: React.ChangeEvent<HTMLSelectElement>
+  ) => {
+    const value = e.target.value;
+    if (value !== "__add_new_vendor__") {
+      setVendor(value);
+      return;
+    }
+    const name = prompt("New vendor name");
+    if (!name) return;
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return;
+    const { data, error } = await supabase
+      .from("vendors")
+      .insert({ name, user_id: user.id })
+      .select("name")
+      .single();
+    if (error || !data) {
+      console.error("Failed to add vendor", error);
+      return;
+    }
+    setVendors((prev) => [...prev, data.name].sort());
+    setVendor(data.name);
+  };
+
+  const handleCategoryChange = async (
+    e: React.ChangeEvent<HTMLSelectElement>
+  ) => {
+    const value = e.target.value;
+    if (value !== "__add_new_category__") {
+      setCategory(value);
+      return;
+    }
+    const name = prompt("New category name");
+    if (!name) return;
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return;
+    const { data, error } = await supabase
+      .from("categories")
+      .insert({ name, user_id: user.id })
+      .select("name")
+      .single();
+    if (error || !data) {
+      console.error("Failed to add category", error);
+      return;
+    }
+    setCategories((prev) => [...prev, data.name].sort());
+    setCategory(data.name);
+  };
+
+  const handleAccountChange = async (
+    e: React.ChangeEvent<HTMLSelectElement>
+  ) => {
+    const value = e.target.value;
+    if (value !== "__add_new_account__") {
+      setAccount(value);
+      return;
+    }
+    const name = prompt("New account name");
+    if (!name) return;
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return;
+    const { data, error } = await supabase
+      .from("accounts")
+      .insert({ name, user_id: user.id })
+      .select("name")
+      .single();
+    if (error || !data) {
+      console.error("Failed to add account", error);
+      return;
+    }
+    setAccounts((prev) => [...prev, data.name].sort());
+    setAccount(data.name);
+  };
+
   useEffect(() => {
     const load = async () => {
       const {
@@ -192,39 +273,30 @@ export default function EditExpensePage({ params }: { params: { id: string } }) 
           value={date}
           onChange={(e) => setDate(e.target.value)}
         />
-        <input
-          list="vendors"
-          placeholder="Vendor"
-          value={vendor}
-          onChange={(e) => setVendor(e.target.value)}
-        />
-        <datalist id="vendors">
+        <select value={vendor} onChange={handleVendorChange}>
           {vendors.map((v) => (
-            <option key={v} value={v} />
+            <option key={v} value={v}>
+              {v}
+            </option>
           ))}
-        </datalist>
-        <input
-          list="categories"
-          placeholder="Category"
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
-        />
-        <datalist id="categories">
+          <option value="__add_new_vendor__">Add new vendor</option>
+        </select>
+        <select value={category} onChange={handleCategoryChange}>
           {categories.map((c) => (
-            <option key={c} value={c} />
+            <option key={c} value={c}>
+              {c}
+            </option>
           ))}
-        </datalist>
-        <input
-          list="accounts"
-          placeholder="Account"
-          value={account}
-          onChange={(e) => setAccount(e.target.value)}
-        />
-        <datalist id="accounts">
+          <option value="__add_new_category__">Add new category</option>
+        </select>
+        <select value={account} onChange={handleAccountChange}>
           {accounts.map((a) => (
-            <option key={a} value={a} />
+            <option key={a} value={a}>
+              {a}
+            </option>
           ))}
-        </datalist>
+          <option value="__add_new_account__">Add new account</option>
+        </select>
         <input
           placeholder="Description"
           value={description}
