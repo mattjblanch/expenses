@@ -16,6 +16,7 @@ export default function NewExpensePage() {
   const [account, setAccount] = useState("");
   const [accounts, setAccounts] = useState<string[]>([]);
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const [extracting, setExtracting] = useState(false);
   const router = useRouter();
 
   const handleCategoryChange = async (
@@ -72,12 +73,11 @@ export default function NewExpensePage() {
     setAccount(data.name);
   };
 
-  const extract = async () => {
-    if (!receiptFile) return;
-
+  const extract = async (file: File) => {
+    setExtracting(true);
     try {
       const formData = new FormData();
-      formData.append("image", receiptFile);
+      formData.append("image", file);
       const res = await fetch("/api/receipts/extract", {
         method: "POST",
         body: formData,
@@ -99,6 +99,8 @@ export default function NewExpensePage() {
       if (data.vendor) setVendor(data.vendor);
     } catch (err) {
       console.error("Failed to extract receipt", err);
+    } finally {
+      setExtracting(false);
     }
   };
 
@@ -229,7 +231,11 @@ export default function NewExpensePage() {
           <input
             type="file"
             accept="image/*"
-            onChange={(e) => setReceiptFile(e.target.files?.[0] || null)}
+            onChange={(e) => {
+              const file = e.target.files?.[0] || null;
+              setReceiptFile(file);
+              if (file) extract(file);
+            }}
           />
           {receiptFile && (
             <div className="flex items-center space-x-2 mt-2">
@@ -238,13 +244,9 @@ export default function NewExpensePage() {
                 alt="Receipt preview"
                 className="h-16 w-16 object-cover rounded"
               />
-              <button
-                type="button"
-                onClick={extract}
-                className="bg-gray-200 px-2 py-1 rounded-md"
-              >
-                Extract
-              </button>
+              {extracting && (
+                <span className="text-sm text-gray-500">OpenAI is loading...</span>
+              )}
             </div>
           )}
         </div>
