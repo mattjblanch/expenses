@@ -23,10 +23,13 @@ export default function NewExpensePage() {
       body: JSON.stringify({
         amount: Number(amount || 0),
         currency,
-        date,
+        // ensure the date is in ISO format to satisfy the API/DB
+        date: new Date(date).toISOString(),
         description,
         vendor,
       }),
+      // send authentication cookies with the request
+      credentials: "include",
     });
 
     if (res.ok) router.push("/dashboard");
