@@ -10,27 +10,48 @@ export default function NewExpensePage() {
   const [description, setDescription] = useState("");
   const [vendor, setVendor] = useState("");
   const [vendors, setVendors] = useState<string[]>([]);
+  const [category, setCategory] = useState("");
+  const [categories, setCategories] = useState<string[]>([]);
   const [account, setAccount] = useState("");
   const [accounts, setAccounts] = useState<string[]>([]);
   const router = useRouter();
 
   useEffect(() => {
-    const loadVendors = async () => {
-      const { data } = await supabase
+    const loadData = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: vendorData } = await supabase
         .from("vendors")
         .select("name")
         .order("name", { ascending: true });
-      setVendors(data?.map((v: { name: string }) => v.name) ?? []);
-    };
-    const loadAccounts = async () => {
-      const { data } = await supabase
+      setVendors(vendorData?.map((v: { name: string }) => v.name) ?? []);
+
+      const { data: categoryData } = await supabase
+        .from("categories")
+        .select("name")
+        .order("name", { ascending: true });
+      setCategories(categoryData?.map((c: { name: string }) => c.name) ?? []);
+
+      const { data: lastCategory } = await supabase
+        .from("expenses")
+        .select("category")
+        .eq("user_id", user.id)
+        .not("category", "is", null)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (lastCategory?.category) setCategory(lastCategory.category);
+
+      const { data: accountData } = await supabase
         .from("accounts")
         .select("name")
         .order("name", { ascending: true });
-      setAccounts(data?.map((a: { name: string }) => a.name) ?? []);
+      setAccounts(accountData?.map((a: { name: string }) => a.name) ?? []);
     };
-    loadVendors();
-    loadAccounts();
+    loadData();
   }, []);
 
   const submit = async () => {
@@ -52,6 +73,7 @@ export default function NewExpensePage() {
         date: isNaN(parsedDate.getTime()) ? new Date().toISOString() : parsedDate.toISOString(),
         description,
         vendor,
+        category,
         account,
       }),
       // send authentication cookies with the request
@@ -87,6 +109,17 @@ export default function NewExpensePage() {
         <datalist id="vendors">
           {vendors.map((v) => (
             <option key={v} value={v} />
+          ))}
+        </datalist>
+        <input
+          list="categories"
+          placeholder="Category"
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+        />
+        <datalist id="categories">
+          {categories.map((c) => (
+            <option key={c} value={c} />
           ))}
         </datalist>
         <input

@@ -66,6 +66,32 @@ export async function POST(req: Request) {
     }
   }
 
+  let category_id: string | null = null
+  if (body.category && String(body.category).trim() !== '') {
+    const { data: existingCategory, error: categoryFetchError } = await supabase
+      .from('categories')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('name', body.category)
+      .maybeSingle()
+    if (categoryFetchError) {
+      return NextResponse.json({ error: categoryFetchError.message }, { status: 400 })
+    }
+    if (existingCategory) {
+      category_id = existingCategory.id
+    } else {
+      const { data: newCategory, error: categoryInsertError } = await supabase
+        .from('categories')
+        .insert({ name: body.category, user_id: user.id })
+        .select('id')
+        .single()
+      if (categoryInsertError) {
+        return NextResponse.json({ error: categoryInsertError.message }, { status: 400 })
+      }
+      category_id = newCategory.id
+    }
+  }
+
   let account_id: string | null = null
   if (body.account && String(body.account).trim() !== '') {
     const { data: existingAccount, error: accountFetchError } = await supabase
@@ -98,8 +124,10 @@ export async function POST(req: Request) {
     date: dateObj.toISOString(),
     description: body.description,
     vendor: body.vendor,
+    category: body.category,
     user_id: user.id,
     vendor_id,
+    category_id,
     account_id,
   }
   const { data, error } = await supabase.from('expenses').insert(insert).select().single()
