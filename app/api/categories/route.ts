@@ -7,11 +7,17 @@ export async function GET() {
   if (!user) return new NextResponse('Unauthorized', { status: 401 })
   const { data, error } = await supabase
     .from('categories')
-    .select('*')
+    .select('id, name, created_at, expenses(count)')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json(data)
+  const mapped = (data ?? []).map((c: any) => ({
+    id: c.id,
+    name: c.name,
+    created_at: c.created_at,
+    expense_count: c.expenses?.[0]?.count ?? 0,
+  }))
+  return NextResponse.json(mapped)
 }
 
 export async function POST(req: Request) {

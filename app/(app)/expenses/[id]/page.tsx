@@ -14,6 +14,8 @@ export default function EditExpensePage({ params }: { params: { id: string } }) 
   const [description, setDescription] = useState("");
   const [vendor, setVendor] = useState("");
   const [vendors, setVendors] = useState<string[]>([]);
+  const [category, setCategory] = useState("");
+  const [categories, setCategories] = useState<string[]>([]);
   const [account, setAccount] = useState("");
   const [accounts, setAccounts] = useState<string[]>([]);
   const [exportId, setExportId] = useState<string | null>(null);
@@ -29,7 +31,7 @@ export default function EditExpensePage({ params }: { params: { id: string } }) 
       }
       const { data } = await supabase
         .from("expenses")
-        .select("*, account:accounts(name)")
+        .select("*, account:accounts(name), category_entity:categories(name)")
         .eq("id", id)
         .eq("user_id", user.id)
         .single();
@@ -45,6 +47,7 @@ export default function EditExpensePage({ params }: { params: { id: string } }) 
         data.date?.slice(0, 10) || new Date().toISOString().slice(0, 10)
       );
       setVendor(data.vendor || "");
+      setCategory(data.category_entity?.name || data.category || "");
       setAccount(data.account?.name || "");
       setDescription(data.description || "");
       setExportId(data.export_id || null);
@@ -53,22 +56,26 @@ export default function EditExpensePage({ params }: { params: { id: string } }) 
   }, [id, router]);
 
   useEffect(() => {
-    const loadVendors = async () => {
-      const { data } = await supabase
+    const loadData = async () => {
+      const { data: vendorData } = await supabase
         .from("vendors")
         .select("name")
         .order("name", { ascending: true });
-      setVendors(data?.map((v: { name: string }) => v.name) ?? []);
-    };
-    const loadAccounts = async () => {
-      const { data } = await supabase
+      setVendors(vendorData?.map((v: { name: string }) => v.name) ?? []);
+
+      const { data: categoryData } = await supabase
+        .from("categories")
+        .select("name")
+        .order("name", { ascending: true });
+      setCategories(categoryData?.map((c: { name: string }) => c.name) ?? []);
+
+      const { data: accountData } = await supabase
         .from("accounts")
         .select("name")
         .order("name", { ascending: true });
-      setAccounts(data?.map((a: { name: string }) => a.name) ?? []);
+      setAccounts(accountData?.map((a: { name: string }) => a.name) ?? []);
     };
-    loadVendors();
-    loadAccounts();
+    loadData();
   }, []);
 
   const submit = async () => {
@@ -91,6 +98,7 @@ export default function EditExpensePage({ params }: { params: { id: string } }) 
           : parsedDate.toISOString(),
         description,
         vendor,
+        category,
         account,
       }),
       credentials: "include",
@@ -151,6 +159,17 @@ export default function EditExpensePage({ params }: { params: { id: string } }) 
         <datalist id="vendors">
           {vendors.map((v) => (
             <option key={v} value={v} />
+          ))}
+        </datalist>
+        <input
+          list="categories"
+          placeholder="Category"
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+        />
+        <datalist id="categories">
+          {categories.map((c) => (
+            <option key={c} value={c} />
           ))}
         </datalist>
         <input
