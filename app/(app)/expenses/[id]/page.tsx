@@ -13,6 +13,7 @@ export default function EditExpensePage({ params }: { params: { id: string } }) 
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [description, setDescription] = useState("");
   const [vendor, setVendor] = useState("");
+  const [vendors, setVendors] = useState<string[]>([]);
   const [exportId, setExportId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -48,24 +49,48 @@ export default function EditExpensePage({ params }: { params: { id: string } }) 
     load();
   }, [id, router]);
 
-    const submit = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) return;
-      const { error } = await supabase
-        .from("expenses")
-        .update({
-          amount: Number(amount || 0),
-          currency,
-          date,
-          description,
-          vendor,
-        })
-        .eq("id", id)
-        .eq("user_id", user.id);
-      if (!error) router.push("/expenses");
+  useEffect(() => {
+    const loadVendors = async () => {
+      const { data } = await supabase
+        .from("vendors")
+        .select("name")
+        .order("name", { ascending: true });
+      setVendors(data?.map((v: { name: string }) => v.name) ?? []);
     };
+    loadVendors();
+  }, []);
+
+  const submit = async () => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const parsedAmount = parseFloat(amount);
+    const parsedDate = new Date(date);
+
+    const res = await fetch(`/api/expenses/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        amount: isNaN(parsedAmount) ? 0 : parsedAmount,
+        currency,
+        date: isNaN(parsedDate.getTime())
+          ? new Date().toISOString()
+          : parsedDate.toISOString(),
+        description,
+        vendor,
+      }),
+      credentials: "include",
+    });
+
+    if (res.ok) {
+      router.push("/expenses");
+      router.refresh();
+    } else {
+      console.error("Failed to save expense", await res.json());
+    }
+  };
 
   const remove = async () => {
     if (exportId) return;
@@ -106,10 +131,16 @@ export default function EditExpensePage({ params }: { params: { id: string } }) 
           onChange={(e) => setDate(e.target.value)}
         />
         <input
+          list="vendors"
           placeholder="Vendor"
           value={vendor}
           onChange={(e) => setVendor(e.target.value)}
         />
+        <datalist id="vendors">
+          {vendors.map((v) => (
+            <option key={v} value={v} />
+          ))}
+        </datalist>
         <input
           placeholder="Description"
           value={description}
