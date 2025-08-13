@@ -35,7 +35,7 @@ export default function VendorsList() {
           {v.expense_count === 0 && (
             <button
               onClick={() => handleDelete(v.id)}
-              className="px-2 py-1 text-sm bg-red-500 text-white rounded"
+              className="px-2 py-1 text-sm bg-red-500 text-white rounded w-fit"
             >
               Delete
             </button>
