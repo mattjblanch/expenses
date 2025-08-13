@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import LogoutButton from './LogoutButton'
 
 export default function Menu() {
   return (
@@ -15,6 +16,7 @@ export default function Menu() {
           </div>
         </details>
         <Link href="/settings" className="block px-4 py-2 hover:bg-neutral-100">Profile</Link>
+        <LogoutButton className="block w-full text-left px-4 py-2 hover:bg-neutral-100" />
       </div>
     </details>
   )
