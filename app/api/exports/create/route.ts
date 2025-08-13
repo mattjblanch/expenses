@@ -36,7 +36,7 @@ export async function POST(req: Request) {
       const dates = expenses.map(e => e.date).sort()
       start = dates[0] || ''
       end = dates[dates.length - 1] || ''
-      periodLabel = start && end ? `${start.slice(0,10)}→${end.slice(0,10)}` : 'custom'
+      periodLabel = start && end ? `${start.slice(0,10)} to ${end.slice(0,10)}` : 'custom'
     } else {
       if (!month) return NextResponse.json({ error: 'month is required YYYY-MM' }, { status: 400 })
       start = month + '-01'
