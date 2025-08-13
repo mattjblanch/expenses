@@ -119,6 +119,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     vendor_id,
     category_id,
     account_id,
+    receipt_url: body.receipt_url,
   }
   const { data, error } = await supabase
     .from('expenses')

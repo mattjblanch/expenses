@@ -129,6 +129,7 @@ export async function POST(req: Request) {
     vendor_id,
     category_id,
     account_id,
+    receipt_url: body.receipt_url,
   }
   const { data, error } = await supabase.from('expenses').insert(insert).select().single()
   if (error) return NextResponse.json({ error: error.message }, { status: 400 })
