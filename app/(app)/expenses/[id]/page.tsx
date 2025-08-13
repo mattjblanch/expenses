@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import { parseDateInput } from "@/lib/date";
 
 export default function EditExpensePage({ params }: { params: { id: string } }) {
   const { id } = params;
@@ -112,7 +113,7 @@ export default function EditExpensePage({ params }: { params: { id: string } }) 
     if (!user) return;
 
     const parsedAmount = parseFloat(amount);
-   const parsedDate = new Date(date);
+    const parsedDate = parseDateInput(date) ?? new Date();
     let newReceiptUrl = receiptUrl;
     if (receiptFile) {
       const fileExt = receiptFile.name.split(".").pop() || "jpg";

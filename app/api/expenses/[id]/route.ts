@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { serverClient } from '@/lib/supabase/server'
+import { parseDateInput } from '@/lib/date'
 
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
   const supabase = serverClient()
@@ -26,8 +27,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     return NextResponse.json({ error: 'Invalid amount' }, { status: 400 })
   }
 
-  const dateObj = new Date(body.date)
-  if (isNaN(dateObj.getTime())) {
+  const dateObj = parseDateInput(body.date)
+  if (!dateObj || isNaN(dateObj.getTime())) {
     return NextResponse.json({ error: 'Invalid date' }, { status: 400 })
   }
 
