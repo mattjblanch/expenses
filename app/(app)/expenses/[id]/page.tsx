@@ -84,13 +84,22 @@ export default function EditExpensePage({ params }: { params: { id: string } }) 
 
   useEffect(() => {
     const createSigned = async () => {
-      if (receiptUrl) {
-        const { data } = await supabase.storage
-          .from("receipts")
-          .createSignedUrl(receiptUrl, 60);
-        setSignedUrl(data?.signedUrl || null);
-      } else {
+      if (!receiptUrl) {
         setSignedUrl(null);
+        return;
+      }
+      try {
+        const res = await fetch("/api/receipts/sign-download", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ path: receiptUrl }),
+        });
+        if (res.ok) {
+          const { url } = await res.json();
+          setSignedUrl(url);
+        }
+      } catch (e) {
+        console.error("Failed to create signed URL", e);
       }
     };
     createSigned();
