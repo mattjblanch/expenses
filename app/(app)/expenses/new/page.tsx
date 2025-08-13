@@ -10,6 +10,8 @@ export default function NewExpensePage() {
   const [description, setDescription] = useState("");
   const [vendor, setVendor] = useState("");
   const [vendors, setVendors] = useState<string[]>([]);
+  const [account, setAccount] = useState("");
+  const [accounts, setAccounts] = useState<string[]>([]);
   const router = useRouter();
 
   useEffect(() => {
@@ -20,7 +22,15 @@ export default function NewExpensePage() {
         .order("name", { ascending: true });
       setVendors(data?.map((v: { name: string }) => v.name) ?? []);
     };
+    const loadAccounts = async () => {
+      const { data } = await supabase
+        .from("accounts")
+        .select("name")
+        .order("name", { ascending: true });
+      setAccounts(data?.map((a: { name: string }) => a.name) ?? []);
+    };
     loadVendors();
+    loadAccounts();
   }, []);
 
   const submit = async () => {
@@ -42,6 +52,7 @@ export default function NewExpensePage() {
         date: isNaN(parsedDate.getTime()) ? new Date().toISOString() : parsedDate.toISOString(),
         description,
         vendor,
+        account,
       }),
       // send authentication cookies with the request
       credentials: "include",
@@ -76,6 +87,17 @@ export default function NewExpensePage() {
         <datalist id="vendors">
           {vendors.map((v) => (
             <option key={v} value={v} />
+          ))}
+        </datalist>
+        <input
+          list="accounts"
+          placeholder="Account"
+          value={account}
+          onChange={(e) => setAccount(e.target.value)}
+        />
+        <datalist id="accounts">
+          {accounts.map((a) => (
+            <option key={a} value={a} />
           ))}
         </datalist>
         <input

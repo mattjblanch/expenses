@@ -66,12 +66,41 @@ export async function POST(req: Request) {
     }
   }
 
+  let account_id: string | null = null
+  if (body.account && String(body.account).trim() !== '') {
+    const { data: existingAccount, error: accountFetchError } = await supabase
+      .from('accounts')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('name', body.account)
+      .maybeSingle()
+    if (accountFetchError) {
+      return NextResponse.json({ error: accountFetchError.message }, { status: 400 })
+    }
+    if (existingAccount) {
+      account_id = existingAccount.id
+    } else {
+      const { data: newAccount, error: accountInsertError } = await supabase
+        .from('accounts')
+        .insert({ name: body.account, user_id: user.id })
+        .select('id')
+        .single()
+      if (accountInsertError) {
+        return NextResponse.json({ error: accountInsertError.message }, { status: 400 })
+      }
+      account_id = newAccount.id
+    }
+  }
+
   const insert = {
-    ...body,
     amount,
+    currency: body.currency,
     date: dateObj.toISOString(),
+    description: body.description,
+    vendor: body.vendor,
     user_id: user.id,
     vendor_id,
+    account_id,
   }
   const { data, error } = await supabase.from('expenses').insert(insert).select().single()
   if (error) return NextResponse.json({ error: error.message }, { status: 400 })
