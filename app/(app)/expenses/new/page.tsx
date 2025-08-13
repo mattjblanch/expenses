@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 
@@ -9,7 +9,19 @@ export default function NewExpensePage() {
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [description, setDescription] = useState("");
   const [vendor, setVendor] = useState("");
+  const [vendors, setVendors] = useState<string[]>([]);
   const router = useRouter();
+
+  useEffect(() => {
+    const loadVendors = async () => {
+      const { data } = await supabase
+        .from("vendors")
+        .select("name")
+        .order("name", { ascending: true });
+      setVendors(data?.map((v: { name: string }) => v.name) ?? []);
+    };
+    loadVendors();
+  }, []);
 
   const submit = async () => {
     const {
@@ -55,7 +67,17 @@ export default function NewExpensePage() {
           onChange={(e) => setCurrency(e.target.value.toUpperCase())}
         />
         <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-        <input placeholder="Vendor" value={vendor} onChange={(e) => setVendor(e.target.value)} />
+        <input
+          list="vendors"
+          placeholder="Vendor"
+          value={vendor}
+          onChange={(e) => setVendor(e.target.value)}
+        />
+        <datalist id="vendors">
+          {vendors.map((v) => (
+            <option key={v} value={v} />
+          ))}
+        </datalist>
         <input
           placeholder="Description"
           value={description}
