@@ -167,6 +167,15 @@ USING (auth.uid() = user_id);
 -- Additional index for expenses export references
 CREATE INDEX IF NOT EXISTS expenses_export_id_idx ON public.expenses(export_id);
 
+-- Ensure buckets exist for storing receipts and exports
+INSERT INTO storage.buckets (id, name)
+VALUES ('receipts', 'receipts')
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO storage.buckets (id, name)
+VALUES ('exports', 'exports')
+ON CONFLICT (id) DO NOTHING;
+
 -- Modify the storage policies to fix type casting issue
 DO $$
 BEGIN
