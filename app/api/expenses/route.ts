@@ -27,11 +27,23 @@ export async function POST(req: Request) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return new NextResponse('Unauthorized', { status: 401 })
   const body = await req.json()
+
+  // validate and normalise amount
+  const amount = Number(body.amount)
+  if (!Number.isFinite(amount)) {
+    return NextResponse.json({ error: 'Invalid amount' }, { status: 400 })
+  }
+
+  // validate and normalise date
+  const dateObj = new Date(body.date)
+  if (isNaN(dateObj.getTime())) {
+    return NextResponse.json({ error: 'Invalid date' }, { status: 400 })
+  }
+
   const insert = {
     ...body,
-    // ensure numeric and date types are stored correctly
-    amount: Number(body.amount),
-    date: new Date(body.date).toISOString(),
+    amount,
+    date: dateObj.toISOString(),
     user_id: user.id,
   }
   const { data, error } = await supabase.from('expenses').insert(insert).select().single()
