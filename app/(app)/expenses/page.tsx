@@ -28,6 +28,12 @@ export default async function ExpensesPage() {
         <h1 className="text-xl font-semibold">Expenses</h1>
         <ExportsPane />
       </div>
+      <div className="grid grid-cols-4 gap-4 pb-2 font-medium text-sm">
+        <div>Date</div>
+        <div>Vendor</div>
+        <div>Description</div>
+        <div className="justify-self-end">Amount</div>
+      </div>
       <div className="divide-y">
         {(expenses ?? []).map((e: any) => (
           <div
