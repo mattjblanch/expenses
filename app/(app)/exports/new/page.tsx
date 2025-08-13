@@ -11,7 +11,7 @@ export default async function NewExportPage() {
 
   const { data: expenses } = await supabase
     .from('expenses')
-    .select('id, amount, currency, date, description, vendor')
+    .select('id, amount, currency, date, vendor, category')
     .eq('user_id', user.id)
     .is('export_id', null)
     .order('date', { ascending: false })
