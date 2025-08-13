@@ -65,7 +65,9 @@ export default function NewExpensePage() {
         .from("categories")
         .select("name")
         .order("name", { ascending: true });
-      setCategories(categoryData?.map((c: { name: string }) => c.name) ?? []);
+      const categoryList =
+        categoryData?.map((c: { name: string }) => c.name) ?? [];
+      setCategories(categoryList);
 
       const { data: lastCategory } = await supabase
         .from("expenses")
@@ -76,12 +78,42 @@ export default function NewExpensePage() {
         .limit(1)
         .maybeSingle();
       if (lastCategory?.category) setCategory(lastCategory.category);
+      else if (categoryList.length > 0) setCategory(categoryList[0]);
 
       const { data: accountData } = await supabase
         .from("accounts")
         .select("name")
         .order("name", { ascending: true });
-      setAccounts(accountData?.map((a: { name: string }) => a.name) ?? []);
+      let accountList = accountData?.map((a: { name: string }) => a.name) ?? [];
+      if (accountList.length === 0) {
+        const { data: defaultAccount } = await supabase
+          .from("accounts")
+          .insert({ name: "Default account", user_id: user.id })
+          .select("name")
+          .single();
+        if (defaultAccount?.name) accountList = [defaultAccount.name];
+      }
+      setAccounts(accountList);
+
+      const { data: lastAccountExpense } = await supabase
+        .from("expenses")
+        .select("account_id")
+        .eq("user_id", user.id)
+        .not("account_id", "is", null)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (lastAccountExpense?.account_id) {
+        const { data: lastAccountName } = await supabase
+          .from("accounts")
+          .select("name")
+          .eq("id", lastAccountExpense.account_id)
+          .maybeSingle();
+        if (lastAccountName?.name) setAccount(lastAccountName.name);
+        else if (accountList.length > 0) setAccount(accountList[0]);
+      } else if (accountList.length > 0) {
+        setAccount(accountList[0]);
+      }
     };
     loadData();
   }, []);
@@ -180,28 +212,20 @@ export default function NewExpensePage() {
             <option key={v} value={v} />
           ))}
         </datalist>
-        <input
-          list="categories"
-          placeholder="Category"
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
-        />
-        <datalist id="categories">
+        <select value={category} onChange={(e) => setCategory(e.target.value)}>
           {categories.map((c) => (
-            <option key={c} value={c} />
+            <option key={c} value={c}>
+              {c}
+            </option>
           ))}
-        </datalist>
-        <input
-          list="accounts"
-          placeholder="Account"
-          value={account}
-          onChange={(e) => setAccount(e.target.value)}
-        />
-        <datalist id="accounts">
+        </select>
+        <select value={account} onChange={(e) => setAccount(e.target.value)}>
           {accounts.map((a) => (
-            <option key={a} value={a} />
+            <option key={a} value={a}>
+              {a}
+            </option>
           ))}
-        </datalist>
+        </select>
         <input
           placeholder="Description"
           value={description}
