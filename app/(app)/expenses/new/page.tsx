@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import { parseDateInput } from "@/lib/date";
 
 export default function NewExpensePage() {
   const [amount, setAmount] = useState("");
@@ -32,7 +33,10 @@ export default function NewExpensePage() {
       if (data.amount) setAmount(data.amount.toString());
       if (data.currency) setCurrency(data.currency.toUpperCase());
       if (data.date) {
-        setDate(data.date.slice(0, 10));
+        const parsed = parseDateInput(data.date);
+        setDate(
+          parsed ? parsed.toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10)
+        );
       } else {
         // reset to today's date if none found on the receipt
         setDate(new Date().toISOString().slice(0, 10));
@@ -89,7 +93,7 @@ export default function NewExpensePage() {
     if (!user) return;
 
     const parsedAmount = parseFloat(amount);
-    const parsedDate = new Date(date);
+    const parsedDate = parseDateInput(date) ?? new Date();
     let receipt_url: string | null = null;
     if (receiptFile) {
       const fileExt = receiptFile.name.split(".").pop() || "jpg";

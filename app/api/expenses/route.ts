@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { serverClient } from '@/lib/supabase/server'
+import { parseDateInput } from '@/lib/date'
 
 export async function GET(req: Request) {
   const supabase = serverClient()
@@ -35,8 +36,8 @@ export async function POST(req: Request) {
   }
 
   // validate and normalise date
-  const dateObj = new Date(body.date)
-  if (isNaN(dateObj.getTime())) {
+  const dateObj = parseDateInput(body.date)
+  if (!dateObj || isNaN(dateObj.getTime())) {
     return NextResponse.json({ error: 'Invalid date' }, { status: 400 })
   }
 
