@@ -25,14 +25,21 @@ export async function POST(req: NextRequest) {
           {
             role: "user",
             content: [
-              { type: "input_text", text: "Here is the receipt:" },
-              { type: "input_image", image_url: `data:image/jpeg;base64,${image}` },
+              { type: "text", text: "Here is the receipt:" },
+              {
+                type: "image_url",
+                image_url: { url: `data:image/jpeg;base64,${image}` },
+              },
             ],
           },
         ],
         response_format: { type: "json_object" },
       }),
     });
+    if (!res.ok) {
+      const errorText = await res.text();
+      throw new Error(`OpenAI API error: ${res.status} ${errorText}`);
+    }
     const data = await res.json();
     const message = data.choices?.[0]?.message?.content;
     if (!message) throw new Error("No response from model");
