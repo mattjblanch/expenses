@@ -1,11 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
-  const { image } = await req.json();
   const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey || !image) {
-    return NextResponse.json({ error: "Missing data" }, { status: 400 });
+  if (!apiKey) {
+    return NextResponse.json(
+      { error: "Missing OpenAI API key" },
+      { status: 500 }
+    );
   }
+
+  const formData = await req.formData();
+  const file = formData.get("image");
+  if (!file || !(file instanceof Blob)) {
+    return NextResponse.json(
+      { error: "Image is required" },
+      { status: 400 }
+    );
+  }
+
+  const arrayBuffer = await file.arrayBuffer();
+  const base64 = Buffer.from(arrayBuffer).toString("base64");
+  const mimeType = file.type || "image/jpeg";
 
   try {
     const res = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -28,7 +43,7 @@ export async function POST(req: NextRequest) {
               { type: "text", text: "Here is the receipt:" },
               {
                 type: "image_url",
-                image_url: { url: `data:image/jpeg;base64,${image}` },
+                image_url: { url: `data:${mimeType};base64,${base64}` },
               },
             ],
           },

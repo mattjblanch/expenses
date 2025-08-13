@@ -19,23 +19,13 @@ export default function NewExpensePage() {
 
   const extract = async () => {
     if (!receiptFile) return;
-    const toBase64 = (file: File) =>
-      new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => {
-          const result = reader.result as string;
-          resolve(result.split(",")[1]);
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
 
     try {
-      const base64 = await toBase64(receiptFile);
+      const formData = new FormData();
+      formData.append("image", receiptFile);
       const res = await fetch("/api/receipts/extract", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ image: base64 }),
+        body: formData,
       });
       if (!res.ok) return;
       const data = await res.json();
