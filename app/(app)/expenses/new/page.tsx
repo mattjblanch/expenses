@@ -17,6 +17,38 @@ export default function NewExpensePage() {
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const router = useRouter();
 
+  const extract = async () => {
+    if (!receiptFile) return;
+    const toBase64 = (file: File) =>
+      new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const result = reader.result as string;
+          resolve(result.split(",")[1]);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+    try {
+      const base64 = await toBase64(receiptFile);
+      const res = await fetch("/api/receipts/extract", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ image: base64 }),
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.amount) setAmount(data.amount.toString());
+      if (data.currency) setCurrency(data.currency.toUpperCase());
+      if (data.date) setDate(data.date.slice(0, 10));
+      if (data.description) setDescription(data.description);
+      if (data.vendor) setVendor(data.vendor);
+    } catch (err) {
+      console.error("Failed to extract receipt", err);
+    }
+  };
+
   useEffect(() => {
     const loadData = async () => {
       const {
@@ -108,6 +140,30 @@ export default function NewExpensePage() {
     <main className="container py-6">
       <h1 className="text-xl font-semibold mb-4">Add expense</h1>
       <div className="card space-y-3">
+        <div>
+          <input
+            type="file"
+            accept="image/*"
+            capture="environment"
+            onChange={(e) => setReceiptFile(e.target.files?.[0] || null)}
+          />
+          {receiptFile && (
+            <div className="flex items-center space-x-2 mt-2">
+              <img
+                src={URL.createObjectURL(receiptFile)}
+                alt="Receipt preview"
+                className="h-16 w-16 object-cover rounded"
+              />
+              <button
+                type="button"
+                onClick={extract}
+                className="bg-gray-200 px-2 py-1 rounded-md"
+              >
+                Extract
+              </button>
+            </div>
+          )}
+        </div>
         <input placeholder="Amount" value={amount} onChange={(e) => setAmount(e.target.value)} />
         <input
           placeholder="Currency (e.g., AUD)"
@@ -152,12 +208,6 @@ export default function NewExpensePage() {
           placeholder="Description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-        />
-        <input
-          type="file"
-          accept="image/*"
-          capture="environment"
-          onChange={(e) => setReceiptFile(e.target.files?.[0] || null)}
         />
         <button onClick={submit} className="bg-black text-white py-2 rounded-md">
           Save
