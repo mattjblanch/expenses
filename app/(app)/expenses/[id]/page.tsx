@@ -23,6 +23,7 @@ export default function EditExpensePage({ params }: { params: { id: string } }) 
   const [receiptUrl, setReceiptUrl] = useState<string | null>(null);
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
   const handleVendorChange = async (
     e: React.ChangeEvent<HTMLSelectElement>
@@ -188,50 +189,57 @@ export default function EditExpensePage({ params }: { params: { id: string } }) 
   }, [receiptUrl]);
 
   const submit = async () => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return;
+    setSaving(true);
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
 
-    const parsedAmount = parseFloat(amount);
-    const parsedDate = parseDateInput(date) ?? new Date();
-    let newReceiptUrl = receiptUrl;
-    if (receiptFile) {
-      const fileExt = receiptFile.name.split(".").pop() || "jpg";
-      const filePath = `${user.id}/${Date.now()}.${fileExt}`;
-      const { error: uploadError } = await supabase.storage
-        .from("receipts")
-        .upload(filePath, receiptFile);
-      if (uploadError) {
-        console.error("Failed to upload receipt", uploadError);
-      } else {
-        newReceiptUrl = filePath;
+      const parsedAmount = parseFloat(amount);
+      const parsedDate = parseDateInput(date) ?? new Date();
+      let newReceiptUrl = receiptUrl;
+      if (receiptFile) {
+        const fileExt = receiptFile.name.split(".").pop() || "jpg";
+        const filePath = `${user.id}/${Date.now()}.${fileExt}`;
+        const { error: uploadError } = await supabase.storage
+          .from("receipts")
+          .upload(filePath, receiptFile);
+        if (uploadError) {
+          console.error("Failed to upload receipt", uploadError);
+        } else {
+          newReceiptUrl = filePath;
+        }
       }
-    }
 
-    const res = await fetch(`/api/expenses/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        amount: isNaN(parsedAmount) ? 0 : parsedAmount,
-        currency,
-        date: isNaN(parsedDate.getTime())
-          ? new Date().toISOString()
-          : parsedDate.toISOString(),
-        description,
-        vendor,
-        category,
-        account,
-        receipt_url: newReceiptUrl,
-      }),
-      credentials: "include",
-    });
+      const res = await fetch(`/api/expenses/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount: isNaN(parsedAmount) ? 0 : parsedAmount,
+          currency,
+          date: isNaN(parsedDate.getTime())
+            ? new Date().toISOString()
+            : parsedDate.toISOString(),
+          description,
+          vendor,
+          category,
+          account,
+          receipt_url: newReceiptUrl,
+        }),
+        credentials: "include",
+      });
 
-    if (res.ok) {
-      router.push("/expenses");
-      router.refresh();
-    } else {
-      console.error("Failed to save expense", await res.json());
+      if (res.ok) {
+        router.push("/expenses");
+        router.refresh();
+      } else {
+        console.error("Failed to save expense", await res.json());
+      }
+    } catch (e) {
+      console.error("Failed to save expense", e);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -327,9 +335,10 @@ export default function EditExpensePage({ params }: { params: { id: string } }) 
           </button>
           <button
             onClick={submit}
-            className="bg-black text-white py-2 rounded-md"
+            disabled={saving}
+            className="bg-black text-white py-2 rounded-md disabled:opacity-50"
           >
-            Save
+            {saving ? "Saving..." : "Save"}
           </button>
         </div>
       </div>
