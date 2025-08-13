@@ -37,6 +37,7 @@ export default function NewExpensePage() {
 
     if (res.ok) {
       router.push("/dashboard");
+      router.refresh();
     } else {
       // surface error for easier debugging
       console.error("Failed to save expense", await res.json());
