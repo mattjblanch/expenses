@@ -17,6 +17,7 @@ export default function NewExpensePage() {
   const [accounts, setAccounts] = useState<string[]>([]);
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [extracting, setExtracting] = useState(false);
+  const [saving, setSaving] = useState(false);
   const router = useRouter();
 
   const handleCategoryChange = async (
@@ -175,51 +176,60 @@ export default function NewExpensePage() {
   }, []);
 
   const submit = async () => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return;
+    setSaving(true);
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
 
-    const parsedAmount = parseFloat(amount);
-    const parsedDate = parseDateInput(date) ?? new Date();
-    let receipt_url: string | null = null;
-    if (receiptFile) {
-      const fileExt = receiptFile.name.split(".").pop() || "jpg";
-      const filePath = `${user.id}/${Date.now()}.${fileExt}`;
-      const { error: uploadError } = await supabase.storage
-        .from("receipts")
-        .upload(filePath, receiptFile);
-      if (uploadError) {
-        console.error("Failed to upload receipt", uploadError);
-      } else {
-        receipt_url = filePath;
+      const parsedAmount = parseFloat(amount);
+      const parsedDate = parseDateInput(date) ?? new Date();
+      let receipt_url: string | null = null;
+      if (receiptFile) {
+        const fileExt = receiptFile.name.split(".").pop() || "jpg";
+        const filePath = `${user.id}/${Date.now()}.${fileExt}`;
+        const { error: uploadError } = await supabase.storage
+          .from("receipts")
+          .upload(filePath, receiptFile);
+        if (uploadError) {
+          console.error("Failed to upload receipt", uploadError);
+        } else {
+          receipt_url = filePath;
+        }
       }
-    }
 
-    const res = await fetch("/api/expenses", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        amount: isNaN(parsedAmount) ? 0 : parsedAmount,
-        currency,
-        // ensure the date is in ISO format to satisfy the API/DB
-        date: isNaN(parsedDate.getTime()) ? new Date().toISOString() : parsedDate.toISOString(),
-        description,
-        vendor,
-        category,
-        account,
-        receipt_url,
-      }),
-      // send authentication cookies with the request
-      credentials: "include",
-    });
+      const res = await fetch("/api/expenses", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount: isNaN(parsedAmount) ? 0 : parsedAmount,
+          currency,
+          // ensure the date is in ISO format to satisfy the API/DB
+          date: isNaN(parsedDate.getTime())
+            ? new Date().toISOString()
+            : parsedDate.toISOString(),
+          description,
+          vendor,
+          category,
+          account,
+          receipt_url,
+        }),
+        // send authentication cookies with the request
+        credentials: "include",
+      });
 
-    if (res.ok) {
-      router.push("/dashboard");
-      router.refresh();
-    } else {
-      // surface error for easier debugging
-      console.error("Failed to save expense", await res.json());
+      if (res.ok) {
+        router.push("/dashboard");
+        router.refresh();
+      } else {
+        // surface error for easier debugging
+        console.error("Failed to save expense", await res.json());
+      }
+    } catch (e) {
+      console.error("Failed to save expense", e);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -289,8 +299,12 @@ export default function NewExpensePage() {
           value={description}
           onChange={(e) => setDescription(e.target.value)}
         />
-        <button onClick={submit} className="bg-black text-white py-2 rounded-md">
-          Save
+        <button
+          onClick={submit}
+          disabled={saving}
+          className="bg-black text-white py-2 rounded-md disabled:opacity-50"
+        >
+          {saving ? "Saving..." : "Save"}
         </button>
       </div>
     </main>
