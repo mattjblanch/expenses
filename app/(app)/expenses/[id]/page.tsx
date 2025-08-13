@@ -48,24 +48,24 @@ export default function EditExpensePage({ params }: { params: { id: string } }) 
     load();
   }, [id, router]);
 
-  const submit = async () => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return;
-    const { error } = await supabase
-      .from("expenses")
-      .update({
-        amount: Number(amount || 0),
-        currency,
-        date,
-        description,
-        vendor,
-      })
-      .eq("id", id)
-      .eq("user_id", user.id);
-    if (!error) router.push("/expenses");
-  };
+    const submit = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+      const { error } = await supabase
+        .from("expenses")
+        .update({
+          amount: Number(amount || 0),
+          currency,
+          date,
+          description,
+          vendor,
+        })
+        .eq("id", id)
+        .eq("user_id", user.id);
+      if (!error) router.push("/expenses");
+    };
 
   const remove = async () => {
     if (exportId) return;
@@ -75,13 +75,16 @@ export default function EditExpensePage({ params }: { params: { id: string } }) 
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) return;
-    const { error } = await supabase
-      .from("expenses")
-      .delete()
-      .eq("id", id)
-      .eq("user_id", user.id);
-    if (!error) router.push("/expenses");
-  };
+      const { error } = await supabase
+        .from("expenses")
+        .delete()
+        .eq("id", id)
+        .eq("user_id", user.id);
+      if (!error) {
+        router.push("/dashboard");
+        router.refresh();
+      }
+    };
 
   return (
     <main className="container py-6">
