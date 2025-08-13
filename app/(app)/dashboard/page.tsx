@@ -15,30 +15,27 @@ export default async function DashboardPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const ym = new Date().toISOString().slice(0,7)
-  const start = ym + '-01'
-  const end = ym + '-31'
-  const { data: monthExpenses } = await supabase
+  const { data: expenses } = await supabase
     .from('expenses')
     .select('id, description, vendor, amount, currency, date')
     .eq('user_id', user.id)
-    .gte('date', start)
-    .lte('date', end)
+    .is('export_id', null)
     .order('date', { ascending: false })
 
-  const total = monthExpenses?.reduce((sum: number, e: any) => sum + e.amount, 0) ?? 0
-  const recent = monthExpenses?.slice(0,5) ?? []
+  const total = expenses?.reduce((sum: number, e: any) => sum + e.amount, 0) ?? 0
+  const count = expenses?.length ?? 0
+  const list = expenses ?? []
 
   return (
     <main className="container py-6">
       <UserHeader />
       <div className="grid gap-3">
         <div className="card">
-          <h2 className="font-semibold mb-2">Quick stats</h2>
-          <p className="text-sm text-neutral-600">Month: {ym}</p>
-          <p className="text-sm">Total: {total}</p>
+          <h2 className="font-semibold mb-2">Unclaimed Expenses</h2>
+          <p className="text-sm">Total value: {aud.format(total)}</p>
+          <p className="text-sm">Total expenses: {count}</p>
           <ul className="mt-2 divide-y">
-            {recent.map((e: any) => (
+            {list.map((e: any) => (
               <li key={e.id} className="grid grid-cols-4 items-center py-2 gap-2">
                 <Link className="underline" href={`/expenses/${e.id}`}>
                   {e.date?.slice(0, 10)}
