@@ -3,7 +3,7 @@ import { serverClient } from '@/lib/supabase/server'
 import JSZip from 'jszip'
 import { buildExpenseFormPdf } from '@/lib/pdf'
 import { toCsv } from '@/lib/csv'
-import nodemailer from 'nodemailer'
+import Mailjet from 'node-mailjet'
 
 function sanitize(name: string) {
   return name.replace(/[^a-zA-Z0-9._-]/g, '_')
@@ -101,22 +101,36 @@ export async function POST(req: Request) {
 
   if (email) {
     try {
-      const transporter = nodemailer.createTransport({
-        host: process.env.SMTP_HOST,
-        port: Number(process.env.SMTP_PORT || 587),
-        secure: false,
-        auth: process.env.SMTP_USER ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS } : undefined,
+      const client = new Mailjet({
+        apiKey: process.env.MAILJET_API_KEY || '',
+        apiSecret: process.env.MAILJET_API_SECRET || '',
       })
-      await transporter.sendMail({
-        from: process.env.SMTP_FROM || process.env.SMTP_USER,
-        to: email,
-        subject: 'Expense export',
-        text: 'Please find attached your exported expenses.',
-        attachments: [
-          { filename: 'expense-form.pdf', content: Buffer.from(pdfBytes) },
-          { filename: 'expenses.csv', content: csv },
-          { filename: 'receipts.zip', content: Buffer.from(receiptsZipBytes), contentType: 'application/zip' }
-        ]
+      await client.post('send', { version: 'v3.1' }).request({
+        Messages: [
+          {
+            From: { Email: process.env.MAILJET_FROM || 'noreply@example.com' },
+            To: [{ Email: email }],
+            Subject: 'Expense export',
+            TextPart: 'Please find attached your exported expenses.',
+            Attachments: [
+              {
+                ContentType: 'application/pdf',
+                Filename: 'expense-form.pdf',
+                Base64Content: Buffer.from(pdfBytes).toString('base64'),
+              },
+              {
+                ContentType: 'text/csv',
+                Filename: 'expenses.csv',
+                Base64Content: Buffer.from(csv).toString('base64'),
+              },
+              {
+                ContentType: 'application/zip',
+                Filename: 'receipts.zip',
+                Base64Content: Buffer.from(receiptsZipBytes).toString('base64'),
+              },
+            ],
+          },
+        ],
       })
     } catch (err) {
       console.error('Failed to send export email', err)
