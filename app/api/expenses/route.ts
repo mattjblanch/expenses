@@ -27,7 +27,13 @@ export async function POST(req: Request) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return new NextResponse('Unauthorized', { status: 401 })
   const body = await req.json()
-  const insert = { ...body, user_id: user.id }
+  const insert = {
+    ...body,
+    // ensure numeric and date types are stored correctly
+    amount: Number(body.amount),
+    date: new Date(body.date).toISOString(),
+    user_id: user.id,
+  }
   const { data, error } = await supabase.from('expenses').insert(insert).select().single()
   if (error) return NextResponse.json({ error: error.message }, { status: 400 })
   return NextResponse.json(data, { status: 201 })
