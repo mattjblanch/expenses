@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import EntitiesMenu from './EntitiesMenu'
+import Menu from './Menu'
 
 export default function Header() {
   return (
@@ -8,7 +8,7 @@ export default function Header() {
         <Link href="/dashboard" className="font-semibold">
           Dashboard
         </Link>
-        <EntitiesMenu />
+        <Menu />
       </div>
     </header>
   )

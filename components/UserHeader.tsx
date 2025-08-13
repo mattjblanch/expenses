@@ -1,5 +1,5 @@
 import LogoutButton from './LogoutButton'
-import EntitiesMenu from './EntitiesMenu'
+import Menu from './Menu'
 import { serverClient } from '@/lib/supabase/server'
 
 export default async function UserHeader() {
@@ -15,7 +15,7 @@ export default async function UserHeader() {
         <div className="text-xs text-neutral-500">{email}</div>
       </div>
       <div className="flex items-center gap-2">
-        <EntitiesMenu />
+        <Menu />
         <LogoutButton />
       </div>
     </div>
