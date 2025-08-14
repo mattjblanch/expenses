@@ -16,7 +16,7 @@ export default async function ExpensesPage() {
   if (!user) redirect('/login')
   const { data: expenses } = await supabase
     .from('expenses')
-    .select('id, vendor, description, amount, currency, date')
+    .select('id, vendor, description, amount, currency, date, pending')
     .eq('user_id', user.id)
     .order('date', { ascending: false })
 
@@ -36,7 +36,7 @@ export default async function ExpensesPage() {
         {(expenses ?? []).map((e: any) => (
           <div
             key={e.id}
-            className="grid grid-cols-4 items-center py-2 gap-4"
+            className={`grid grid-cols-4 items-center py-2 gap-4 ${e.pending ? 'bg-orange-100' : ''}`}
           >
             <Link className="underline" href={`/expenses/${e.id}`}>
               {e.date?.slice(0, 10)}
