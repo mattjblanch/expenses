@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { serverClient } from "@/lib/supabase/server";
 
 export async function POST(req: NextRequest) {
   const apiKey = process.env.OPENAI_API_KEY;
@@ -18,6 +19,20 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const supabase = serverClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  const { data: categoryData } = await supabase
+    .from("categories")
+    .select("name")
+    .eq("user_id", user.id)
+    .order("name", { ascending: true });
+  const categories = categoryData?.map((c: { name: string }) => c.name) ?? [];
+
   const arrayBuffer = await file.arrayBuffer();
   const base64 = Buffer.from(arrayBuffer).toString("base64");
   const mimeType = file.type || "image/jpeg";
@@ -36,7 +51,7 @@ export async function POST(req: NextRequest) {
           {
             role: "system",
             content:
-              "Extract the amount, currency, date, vendor and description from the provided receipt image and respond in JSON.",
+              `Extract the amount, currency, date, vendor, description and the best matching category from the following list: ${categories.join(", ")}. If none apply, suggest a new category name. Respond in JSON.`,
           },
           {
             role: "user",
@@ -74,7 +89,7 @@ export async function POST(req: NextRequest) {
           {
             role: "system",
             content:
-              "You are verifying extracted receipt data. Compare the provided fields with the image and correct any mistakes. Respond in JSON.",
+              `You are verifying extracted receipt data. Compare the provided fields with the image and correct any mistakes, ensuring the category is either one of: ${categories.join(", ")} or a new suggestion. Respond in JSON.`,
           },
           {
             role: "user",
