@@ -92,7 +92,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       .eq('user_id', user.id)
       .eq('name', body.account)
       .maybeSingle()
-    if (accountFetchError) {
+  if (accountFetchError) {
       return NextResponse.json({ error: accountFetchError.message }, { status: 400 })
     }
     if (existingAccount) {
@@ -110,7 +110,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     }
   }
 
-  const update = {
+  const update: any = {
     amount,
     currency: body.currency,
     date: dateObj.toISOString(),
@@ -121,6 +121,10 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     category_id,
     account_id,
     receipt_url: body.receipt_url,
+  }
+
+  if (typeof body.pending === 'boolean') {
+    update.pending = body.pending
   }
   const { data, error } = await supabase
     .from('expenses')

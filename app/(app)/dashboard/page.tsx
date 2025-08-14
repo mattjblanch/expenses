@@ -16,7 +16,7 @@ export default async function DashboardPage() {
 
   const { data: expenses } = await supabase
     .from('expenses')
-    .select('id, description, vendor, amount, currency, date')
+    .select('id, description, vendor, amount, currency, date, pending')
     .eq('user_id', user.id)
     .is('export_id', null)
     .order('date', { ascending: false })
@@ -34,6 +34,12 @@ export default async function DashboardPage() {
         >
           Add expense
         </Link>
+        <Link
+          href="/expenses/snap"
+          className="px-3 py-2 rounded-md border block text-center bg-blue-600 text-white hover:bg-blue-700"
+        >
+          Snap expense
+        </Link>
         <div className="card">
           <h2 className="font-semibold mb-2">Unclaimed Expenses</h2>
           <p className="text-sm">Total value: {aud.format(total)}</p>
@@ -41,7 +47,7 @@ export default async function DashboardPage() {
           <ul className="mt-2 grid gap-3">
             {list.map((e: any) => (
               <li key={e.id}>
-                <Link href={`/expenses/${e.id}`} className="card block">
+                <Link href={`/expenses/${e.id}`} className={`card block ${e.pending ? 'bg-orange-100' : ''}`}>
                   <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-sm">
                     <span>{e.date?.slice(0, 10)}</span>
                     <span className="justify-self-end">{aud.format(e.amount)}</span>

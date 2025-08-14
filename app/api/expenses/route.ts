@@ -101,7 +101,7 @@ export async function POST(req: Request) {
       .eq('user_id', user.id)
       .eq('name', body.account)
       .maybeSingle()
-    if (accountFetchError) {
+  if (accountFetchError) {
       return NextResponse.json({ error: accountFetchError.message }, { status: 400 })
     }
     if (existingAccount) {
@@ -119,6 +119,8 @@ export async function POST(req: Request) {
     }
   }
 
+  const pending = body.pending === true
+
   const insert = {
     amount,
     currency: body.currency,
@@ -131,6 +133,7 @@ export async function POST(req: Request) {
     category_id,
     account_id,
     receipt_url: body.receipt_url,
+    pending,
   }
   const { data, error } = await supabase.from('expenses').insert(insert).select().single()
   if (error) return NextResponse.json({ error: error.message }, { status: 400 })

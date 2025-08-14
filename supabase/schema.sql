@@ -158,6 +158,7 @@ CREATE TABLE IF NOT EXISTS public.expenses (
   date TIMESTAMPTZ DEFAULT NOW(),
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
+  pending BOOLEAN NOT NULL DEFAULT false,
   deleted_at TIMESTAMPTZ
 );
 

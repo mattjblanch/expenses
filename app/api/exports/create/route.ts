@@ -27,6 +27,7 @@ export async function POST(req: Request) {
         .from('expenses')
         .select('id, amount, currency, date, description, vendor, category, receipt_url, export_id')
         .eq('user_id', user.id)
+        .eq('pending', false)
         .in('id', ids)
         .order('date', { ascending: true })
       if (error) {
@@ -45,6 +46,7 @@ export async function POST(req: Request) {
       let q = supabase.from('expenses')
         .select('id, amount, currency, date, description, vendor, category, receipt_url, export_id')
         .eq('user_id', user.id)
+        .eq('pending', false)
         .gte('date', start).lte('date', end)
       if (!includeExported) q = q.is('export_id', null)
       q = q.order('date', { ascending: true })

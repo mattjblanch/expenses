@@ -17,6 +17,7 @@ export async function GET(req: Request) {
     .from('expenses')
     .select('id, amount, currency, date, description, vendor, category, receipt_url, export_id')
     .eq('user_id', user.id)
+    .eq('pending', false)
     .gte('date', start).lte('date', end)
     .order('date', { ascending: true })
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })

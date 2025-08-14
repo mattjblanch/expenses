@@ -13,6 +13,7 @@ export default async function NewExportPage() {
     .from('expenses')
     .select('id, amount, currency, date, vendor, category')
     .eq('user_id', user.id)
+    .eq('pending', false)
     .is('export_id', null)
     .order('date', { ascending: false })
 

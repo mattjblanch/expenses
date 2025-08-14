@@ -226,6 +226,7 @@ export default function EditExpensePage({ params }: { params: { id: string } }) 
           category,
           account,
           receipt_url: newReceiptUrl,
+          pending: false,
         }),
         credentials: "include",
       });
