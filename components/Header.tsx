@@ -16,9 +16,12 @@ export default async function Header() {
   return (
     <header className="border-b sb-2 mb-6">
       <div className="container flex items-center justify-between py-4">
-        <Link href="/dashboard" className="font-semibold">
-          SpendWise
-        </Link>
+        <div className="flex items-center gap-4">
+          <Menu />
+          <Link href="/dashboard" className="font-semibold">
+            SpendWise
+          </Link>
+        </div>
         <div className="flex items-center gap-3">
           {user && (
             <div className="flex items-center gap-2 sb-2">
@@ -28,7 +31,6 @@ export default async function Header() {
               <span className="text-sm hidden sm:inline">{name}</span>
             </div>
           )}
-          <Menu />
         </div>
       </div>
     </header>
