@@ -28,6 +28,12 @@ export default async function DashboardPage() {
   return (
     <main className="container py-6">
       <div className="grid gap-3">
+        <Link
+          href="/expenses/new"
+          className="px-3 py-2 rounded-md border block text-center bg-green-600 text-white hover:bg-green-700"
+        >
+          Add expense
+        </Link>
         <div className="card">
           <h2 className="font-semibold mb-2">Unclaimed Expenses</h2>
           <p className="text-sm">Total value: {aud.format(total)}</p>
@@ -47,14 +53,8 @@ export default async function DashboardPage() {
             ))}
           </ul>
           <Link
-            href="/expenses/new"
-            className="px-3 py-2 rounded-md border block text-center mt-2 hover:bg-neutral-100"
-          >
-            Add expense
-          </Link>
-          <Link
             href="/exports/new"
-            className="px-3 py-2 rounded-md border block text-center mt-2 hover:bg-neutral-100"
+            className="px-3 py-2 rounded-md border block text-center mt-2 bg-red-600 text-white hover:bg-red-700"
           >
             Export expenses
           </Link>
