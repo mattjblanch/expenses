@@ -1,4 +1,3 @@
-import UserHeader from '@/components/UserHeader'
 import { serverClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import ExportsPane from './ExportsPane'
@@ -23,7 +22,6 @@ export default async function ExpensesPage() {
 
   return (
     <main className="container py-6">
-      <UserHeader />
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-xl font-semibold">Expenses</h1>
         <ExportsPane />

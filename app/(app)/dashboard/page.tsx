@@ -1,4 +1,3 @@
-import UserHeader from '@/components/UserHeader'
 import { serverClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
@@ -28,7 +27,6 @@ export default async function DashboardPage() {
 
   return (
     <main className="container py-6">
-      <UserHeader />
       <div className="grid gap-3">
         <div className="card">
           <h2 className="font-semibold mb-2">Unclaimed Expenses</h2>
