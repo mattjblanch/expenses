@@ -50,13 +50,13 @@ export default async function DashboardPage() {
           </ul>
           <Link
             href="/expenses/new"
-            className="bg-black text-white py-2 rounded-md block text-center mt-2"
+            className="px-3 py-2 rounded-md border block text-center mt-2 hover:bg-neutral-100"
           >
             Add expense
           </Link>
           <Link
             href="/exports/new"
-            className="bg-black text-white py-2 rounded-md block text-center mt-2"
+            className="px-3 py-2 rounded-md border block text-center mt-2 hover:bg-neutral-100"
           >
             Export expenses
           </Link>

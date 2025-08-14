@@ -43,7 +43,11 @@ export default function ExportExpenses({ initialExpenses, userEmail }:{ initialE
           ))}
           {!initialExpenses.length && <p className="text-sm text-neutral-600">No expenses available</p>}
         </div>
-        <button disabled={!selected.length || loading} onClick={submit} className="bg-black text-white py-2 rounded-md">
+        <button
+          disabled={!selected.length || loading}
+          onClick={submit}
+          className="px-3 py-2 rounded-md border hover:bg-neutral-100"
+        >
           {loading ? 'Exporting…' : 'Confirm export'}
         </button>
       </div>
