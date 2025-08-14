@@ -20,33 +20,6 @@ export default function NewExpensePage() {
   const [saving, setSaving] = useState(false);
   const router = useRouter();
 
-  const handleCategoryChange = async (
-    e: React.ChangeEvent<HTMLSelectElement>
-  ) => {
-    const value = e.target.value;
-    if (value !== "__add_new_category__") {
-      setCategory(value);
-      return;
-    }
-    const name = prompt("New category name");
-    if (!name) return;
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return;
-    const { data, error } = await supabase
-      .from("categories")
-      .insert({ name, user_id: user.id })
-      .select("name")
-      .single();
-    if (error || !data) {
-      console.error("Failed to add category", error);
-      return;
-    }
-    setCategories((prev) => [...prev, data.name].sort());
-    setCategory(data.name);
-  };
-
   const handleAccountChange = async (
     e: React.ChangeEvent<HTMLSelectElement>
   ) => {
@@ -82,6 +55,7 @@ export default function NewExpensePage() {
       const res = await fetch("/api/receipts/extract", {
         method: "POST",
         body: formData,
+        credentials: "include",
       });
       if (!res.ok) return;
       const data = await res.json();
@@ -97,7 +71,18 @@ export default function NewExpensePage() {
         setDate(new Date().toISOString().slice(0, 10));
       }
       if (data.description) setDescription(data.description);
-      if (data.vendor) setVendor(data.vendor);
+      if (data.vendor) {
+        const match = vendors.find(
+          (v) => v.toLowerCase() === data.vendor.toLowerCase()
+        );
+        setVendor(match || data.vendor);
+      }
+      if (data.category) {
+        const match = categories.find(
+          (c) => c.toLowerCase() === data.category.toLowerCase()
+        );
+        setCategory(match || data.category);
+      }
     } catch (err) {
       console.error("Failed to extract receipt", err);
     } finally {
@@ -125,17 +110,6 @@ export default function NewExpensePage() {
       const categoryList =
         categoryData?.map((c: { name: string }) => c.name) ?? [];
       setCategories(categoryList);
-
-      const { data: lastCategory } = await supabase
-        .from("expenses")
-        .select("category")
-        .eq("user_id", user.id)
-        .not("category", "is", null)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (lastCategory?.category) setCategory(lastCategory.category);
-      else if (categoryList.length > 0) setCategory(categoryList[0]);
 
       const { data: accountData } = await supabase
         .from("accounts")
@@ -174,6 +148,24 @@ export default function NewExpensePage() {
     };
     loadData();
   }, []);
+
+  useEffect(() => {
+    if (vendor) {
+      const match = vendors.find(
+        (v) => v.toLowerCase() === vendor.toLowerCase()
+      );
+      if (match) setVendor(match);
+    }
+  }, [vendors, vendor]);
+
+  useEffect(() => {
+    if (category) {
+      const match = categories.find(
+        (c) => c.toLowerCase() === category.toLowerCase()
+      );
+      if (match) setCategory(match);
+    }
+  }, [categories, category]);
 
   const submit = async () => {
     setSaving(true);
@@ -278,14 +270,17 @@ export default function NewExpensePage() {
             <option key={v} value={v} />
           ))}
         </datalist>
-        <select value={category} onChange={handleCategoryChange}>
+        <input
+          list="categories"
+          placeholder="Category"
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+        />
+        <datalist id="categories">
           {categories.map((c) => (
-            <option key={c} value={c}>
-              {c}
-            </option>
+            <option key={c} value={c} />
           ))}
-          <option value="__add_new_category__">Add new category</option>
-        </select>
+        </datalist>
         <select value={account} onChange={handleAccountChange}>
           {accounts.map((a) => (
             <option key={a} value={a}>
