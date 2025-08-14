@@ -36,12 +36,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           src="https://code.jquery.com/jquery-3.7.1.min.js"
           integrity="sha256-+eRQz7JmlE/hN5C2p2iVJYUU9IW3ItZJo+7VWlM0YhA="
           crossOrigin="anonymous"
+          strategy="beforeInteractive"
         />
         <Script
           src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
           crossOrigin="anonymous"
+          strategy="afterInteractive"
         />
-        <Script src="/js/sb-admin-2.min.js" />
+        <Script src="/js/sb-admin-2.min.js" strategy="afterInteractive" />
       </body>
     </html>
   );
