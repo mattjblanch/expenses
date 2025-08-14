@@ -113,46 +113,56 @@ export async function POST(req: Request) {
       await supabase.from('expenses').update({ export_id: created.id }).in('id', expenses.map((e:any)=> e.id))
     }
 
+    const { data: urlData } = await supabase.storage.from('exports').createSignedUrl(filePath, 60 * 60 * 24)
+    const signedUrl = urlData?.signedUrl
+
     if (email) {
       try {
         const client = new Mailjet({
           apiKey: process.env.MAILJET_API_KEY || '',
           apiSecret: process.env.MAILJET_API_SECRET || '',
         })
+
+        const attachments = [
+          {
+            ContentType: 'application/pdf',
+            Filename: 'expense-form.pdf',
+            Base64Content: Buffer.from(pdfBytes).toString('base64'),
+          },
+          {
+            ContentType: 'text/csv',
+            Filename: 'expenses.csv',
+            Base64Content: Buffer.from(csv).toString('base64'),
+          },
+          {
+            ContentType: 'application/zip',
+            Filename: 'receipts.zip',
+            Base64Content: Buffer.from(receiptsZipBytes).toString('base64'),
+          },
+        ]
+
+        const totalAttachmentSize = attachments.reduce((s, a) => s + Buffer.byteLength(a.Base64Content, 'base64'), 0)
+        const message: any = {
+          From: { Email: process.env.MAILJET_FROM || 'noreply@example.com' },
+          To: [{ Email: email }],
+          Subject: 'Expense export',
+          TextPart: totalAttachmentSize > 15 * 1024 * 1024
+            ? `Your export is ready. Download it here: ${signedUrl}`
+            : 'Please find attached your exported expenses.',
+        }
+        if (totalAttachmentSize <= 15 * 1024 * 1024) {
+          message.Attachments = attachments
+        }
+
         await client.post('send', { version: 'v3.1' }).request({
-          Messages: [
-            {
-              From: { Email: process.env.MAILJET_FROM || 'noreply@example.com' },
-              To: [{ Email: email }],
-              Subject: 'Expense export',
-              TextPart: 'Please find attached your exported expenses.',
-              Attachments: [
-                {
-                  ContentType: 'application/pdf',
-                  Filename: 'expense-form.pdf',
-                  Base64Content: Buffer.from(pdfBytes).toString('base64'),
-                },
-                {
-                  ContentType: 'text/csv',
-                  Filename: 'expenses.csv',
-                  Base64Content: Buffer.from(csv).toString('base64'),
-                },
-                {
-                  ContentType: 'application/zip',
-                  Filename: 'receipts.zip',
-                  Base64Content: Buffer.from(receiptsZipBytes).toString('base64'),
-                },
-              ],
-            },
-          ],
+          Messages: [message],
         })
       } catch (err) {
         console.error('Failed to send export email', err)
       }
     }
 
-    const { data: urlData } = await supabase.storage.from('exports').createSignedUrl(filePath, 60)
-    return NextResponse.json({ exportId: created.id, itemsCount: created.items_count, totalAmount: created.total_amount, signedUrl: urlData?.signedUrl })
+    return NextResponse.json({ exportId: created.id, itemsCount: created.items_count, totalAmount: created.total_amount, signedUrl })
   } catch (err) {
     console.error('Failed to create export', err)
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
