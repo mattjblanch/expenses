@@ -6,7 +6,13 @@
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Arial; }
 .container { max-width: 960px; margin: 0 auto; padding: 1rem; }
-.card { border: 1px solid rgba(0,0,0,.1); border-radius: 16px; padding: 1rem; }
+.card {
+  border: 1px solid rgba(0,0,0,.1);
+  border-radius: 16px;
+  padding: 1rem;
+  background-color: #fff;
+  color: #000;
+}
 input:not([type='checkbox']):not([type='radio']), button, textarea, select {
   width: 100%;
   padding: .6rem;
@@ -32,7 +38,8 @@ pre { overflow: auto; background: rgba(0,0,0,.04); padding: .75rem; border-radiu
 
   .card {
     border: 1px solid rgba(255,255,255,.1);
-    background-color: #1f2937 !important;
+    background-color: #1f2937;
+    color: #fff;
   }
 
   pre {
