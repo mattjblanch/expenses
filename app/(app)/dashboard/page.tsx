@@ -14,11 +14,22 @@ export default async function DashboardPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: expenses } = await supabase
+  const { data: pendingExpenses } = await supabase
     .from('expenses')
-    .select('id, description, vendor, amount, currency, date, pending')
+    .select('amount')
     .eq('user_id', user.id)
     .is('export_id', null)
+    .eq('pending', true)
+
+  const pendingTotal = pendingExpenses?.reduce((sum: number, e: any) => sum + e.amount, 0) ?? 0
+  const pendingCount = pendingExpenses?.length ?? 0
+
+  const { data: expenses } = await supabase
+    .from('expenses')
+    .select('id, description, vendor, amount, currency, date')
+    .eq('user_id', user.id)
+    .is('export_id', null)
+    .eq('pending', false)
     .order('date', { ascending: false })
 
   const total = expenses?.reduce((sum: number, e: any) => sum + e.amount, 0) ?? 0
@@ -41,13 +52,18 @@ export default async function DashboardPage() {
           Snap expense
         </Link>
         <div className="card">
+          <h2 className="font-semibold mb-2">Unconfirmed Expenses</h2>
+          <p className="text-sm">Total value: {aud.format(pendingTotal)}</p>
+          <p className="text-sm">Total expenses: {pendingCount}</p>
+        </div>
+        <div className="card">
           <h2 className="font-semibold mb-2">Unclaimed Expenses</h2>
           <p className="text-sm">Total value: {aud.format(total)}</p>
           <p className="text-sm">Total expenses: {count}</p>
           <ul className="mt-2 grid gap-3">
             {list.map((e: any) => (
               <li key={e.id}>
-                <Link href={`/expenses/${e.id}`} className={`card block ${e.pending ? 'bg-orange-100' : ''}`}>
+                <Link href={`/expenses/${e.id}`} className="card block">
                   <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-sm">
                     <span>{e.date?.slice(0, 10)}</span>
                     <span className="justify-self-end">{aud.format(e.amount)}</span>
