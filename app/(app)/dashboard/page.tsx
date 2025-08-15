@@ -16,13 +16,18 @@ export default async function DashboardPage() {
 
   const { data: pendingExpenses } = await supabase
     .from('expenses')
-    .select('amount')
+    .select('id, description, vendor, amount, currency, date')
     .eq('user_id', user.id)
     .is('export_id', null)
     .eq('pending', true)
+    .order('date', { ascending: false })
 
-  const pendingTotal = pendingExpenses?.reduce((sum: number, e: any) => sum + e.amount, 0) ?? 0
+  const pendingTotal = pendingExpenses?.reduce(
+    (sum: number, e: any) => sum + e.amount,
+    0,
+  ) ?? 0
   const pendingCount = pendingExpenses?.length ?? 0
+  const pendingList = pendingExpenses ?? []
 
   const { data: expenses } = await supabase
     .from('expenses')
@@ -55,6 +60,20 @@ export default async function DashboardPage() {
           <h2 className="font-semibold mb-2">Unconfirmed Expenses</h2>
           <p className="text-sm">Total value: {aud.format(pendingTotal)}</p>
           <p className="text-sm">Total expenses: {pendingCount}</p>
+          <ul className="mt-2 grid gap-3">
+            {pendingList.map((e: any) => (
+              <li key={e.id}>
+                <Link href={`/expenses/${e.id}`} className="card block">
+                  <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-sm">
+                    <span>{e.date?.slice(0, 10)}</span>
+                    <span className="justify-self-end">{aud.format(e.amount)}</span>
+                    <span className="col-span-2">{e.vendor || '—'}</span>
+                    <span className="col-span-2">{e.description || '—'}</span>
+                  </div>
+                </Link>
+              </li>
+            ))}
+          </ul>
         </div>
         <div className="card">
           <h2 className="font-semibold mb-2">Unclaimed Expenses</h2>
