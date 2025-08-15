@@ -232,7 +232,7 @@ export default function EditExpensePage({ params }: { params: { id: string } }) 
       });
 
       if (res.ok) {
-        router.push("/expenses");
+        router.push("/dashboard");
         router.refresh();
       } else {
         console.error("Failed to save expense", await res.json());
