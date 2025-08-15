@@ -2,6 +2,7 @@ import { serverClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import UnclaimedExpenses from '@/components/UnclaimedExpenses'
+import SnapExpenseButton from '@/components/SnapExpenseButton'
 
 export const revalidate = 0
 
@@ -52,12 +53,7 @@ export default async function DashboardPage() {
           >
             Add manual expense
           </Link>
-          <Link
-            href="/expenses/snap"
-            className="px-3 py-2 rounded-md border block text-center bg-green-600 text-white hover:bg-green-700"
-          >
-            Snap expense
-          </Link>
+          <SnapExpenseButton className="px-3 py-2 rounded-md border block text-center bg-green-600 text-white hover:bg-green-700" />
         </div>
         <div className="card">
           <h2 className="font-semibold mb-2">Unconfirmed Expenses</h2>

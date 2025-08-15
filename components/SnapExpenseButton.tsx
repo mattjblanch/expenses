@@ -2,15 +2,11 @@
 import { supabase } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { parseDateInput } from "@/lib/date";
-import { useRef, useEffect } from "react";
+import { useRef } from "react";
 
-export default function SnapExpensePage() {
+export default function SnapExpenseButton({ className = "" }: { className?: string }) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-
-  useEffect(() => {
-    fileInputRef.current?.click();
-  }, []);
 
   const saveExpense = async (receiptFile: File) => {
     try {
@@ -68,9 +64,7 @@ export default function SnapExpensePage() {
           });
           if (extractRes.ok) {
             const data = await extractRes.json();
-            const parsedDate = data.date
-              ? parseDateInput(data.date)
-              : null;
+            const parsedDate = data.date ? parseDateInput(data.date) : null;
             // Update fields but keep expense pending until user confirmation
             await fetch(`/api/expenses/${expenseId}`, {
               method: "PATCH",
@@ -108,33 +102,29 @@ export default function SnapExpensePage() {
   };
 
   const submit = (receiptFile: File) => {
-    router.push("/dashboard");
-    router.refresh();
     void saveExpense(receiptFile);
   };
 
   return (
-    <main className="container py-6">
-      <h1 className="text-xl font-semibold mb-4">Snap expense</h1>
-      <div className="card space-y-3">
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          capture="environment"
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) submit(file);
-          }}
-          className="hidden"
-        />
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          className="px-3 py-2 rounded-md border block text-center bg-green-600 text-white hover:bg-green-700"
-        >
-          Snap expense
-        </button>
-      </div>
-    </main>
+    <>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) submit(file);
+        }}
+        className="hidden"
+      />
+      <button
+        onClick={() => fileInputRef.current?.click()}
+        className={className}
+      >
+        Snap expense
+      </button>
+    </>
   );
 }
+
