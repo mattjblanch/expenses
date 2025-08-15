@@ -26,12 +26,13 @@ pre { overflow: auto; background: rgba(0,0,0,.04); padding: .75rem; border-radiu
 
 @media (prefers-color-scheme: dark) {
   body {
-    color: #fff;
-    background-color: #000;
+    color: #fff !important;
+    background-color: #000 !important;
   }
 
   .card {
     border: 1px solid rgba(255,255,255,.1);
+    background-color: #1f2937 !important;
   }
 
   pre {
