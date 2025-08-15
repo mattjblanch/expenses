@@ -227,7 +227,7 @@ export default function NewExpensePage() {
 
   return (
     <main className="container py-6">
-      <h1 className="text-xl font-semibold mb-4">Add expense</h1>
+      <h1 className="text-xl font-semibold mb-4">Add manual expense</h1>
       <div className="card space-y-3">
         <div>
           <input

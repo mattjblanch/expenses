@@ -45,18 +45,20 @@ export default async function DashboardPage() {
   return (
     <main className="container py-6">
       <div className="grid gap-3">
-        <Link
-          href="/expenses/new"
-          className="px-3 py-2 rounded-md border block text-center bg-green-600 text-white hover:bg-green-700"
-        >
-          Add expense
-        </Link>
-        <Link
-          href="/expenses/snap"
-          className="px-3 py-2 rounded-md border block text-center bg-blue-600 text-white hover:bg-blue-700"
-        >
-          Snap expense
-        </Link>
+        <div className="grid grid-cols-2 gap-3">
+          <Link
+            href="/expenses/new"
+            className="px-3 py-2 rounded-md border block text-center hover:bg-neutral-100"
+          >
+            Add manual expense
+          </Link>
+          <Link
+            href="/expenses/snap"
+            className="px-3 py-2 rounded-md border block text-center bg-green-600 text-white hover:bg-green-700"
+          >
+            Snap expense
+          </Link>
+        </div>
         <div className="card">
           <h2 className="font-semibold mb-2">Unconfirmed Expenses</h2>
           <p className="text-sm">Total value: {aud.format(pendingTotal)}</p>
