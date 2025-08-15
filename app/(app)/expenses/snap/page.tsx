@@ -2,9 +2,11 @@
 import { supabase } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { parseDateInput } from "@/lib/date";
+import { useRef } from "react";
 
 export default function SnapExpensePage() {
   const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const saveExpense = async (receiptFile: File) => {
     try {
@@ -112,6 +114,7 @@ export default function SnapExpensePage() {
       <h1 className="text-xl font-semibold mb-4">Snap expense</h1>
       <div className="card space-y-3">
         <input
+          ref={fileInputRef}
           type="file"
           accept="image/*"
           capture="environment"
@@ -119,7 +122,14 @@ export default function SnapExpensePage() {
             const file = e.target.files?.[0];
             if (file) submit(file);
           }}
+          className="hidden"
         />
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          className="px-3 py-2 rounded-md border block text-center bg-green-600 text-white hover:bg-green-700"
+        >
+          Snap expense
+        </button>
       </div>
     </main>
   );
