@@ -8,49 +8,48 @@ export default function SnapExpensePage() {
   const [saving, setSaving] = useState(false);
   const router = useRouter();
 
-  const submit = async () => {
+  const submit = () => {
     if (!receiptFile) return;
     setSaving(true);
-    try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) return;
-      const fileExt = receiptFile.name.split(".").pop() || "jpg";
-      const filePath = `${user.id}/${Date.now()}.${fileExt}`;
-      const { error: uploadError } = await supabase.storage
-        .from("receipts")
-        .upload(filePath, receiptFile);
-      if (uploadError) {
-        console.error("Failed to upload receipt", uploadError);
+    void (async () => {
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (!user) return;
+        const fileExt = receiptFile.name.split(".").pop() || "jpg";
+        const filePath = `${user.id}/${Date.now()}.${fileExt}`;
+        const { error: uploadError } = await supabase.storage
+          .from("receipts")
+          .upload(filePath, receiptFile);
+        if (uploadError) {
+          console.error("Failed to upload receipt", uploadError);
+        }
+        const res = await fetch("/api/expenses", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            amount: 0,
+            currency: process.env.NEXT_PUBLIC_DEFAULT_CURRENCY || "AUD",
+            date: new Date().toISOString(),
+            description: "",
+            vendor: "",
+            category: "",
+            account: "",
+            receipt_url: filePath,
+            pending: true,
+          }),
+          credentials: "include",
+        });
+        if (!res.ok) {
+          console.error("Failed to save expense", await res.json());
+        }
+      } catch (e) {
+        console.error("Failed to save expense", e);
       }
-      const res = await fetch("/api/expenses", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          amount: 0,
-          currency: process.env.NEXT_PUBLIC_DEFAULT_CURRENCY || "AUD",
-          date: new Date().toISOString(),
-          description: "",
-          vendor: "",
-          category: "",
-          account: "",
-          receipt_url: filePath,
-          pending: true,
-        }),
-        credentials: "include",
-      });
-      if (res.ok) {
-        router.push("/dashboard");
-        router.refresh();
-      } else {
-        console.error("Failed to save expense", await res.json());
-      }
-    } catch (e) {
-      console.error("Failed to save expense", e);
-    } finally {
-      setSaving(false);
-    }
+    })();
+    router.push("/dashboard");
+    router.refresh();
   };
 
   return (
