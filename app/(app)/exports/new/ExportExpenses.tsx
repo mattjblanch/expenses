@@ -34,10 +34,15 @@ export default function ExportExpenses({ initialExpenses, userEmail }:{ initialE
       <h1 className="text-xl font-semibold mb-4">Export expenses</h1>
       <div className="card space-y-4">
         <input type="email" placeholder="Email" value={email} onChange={e=> setEmail(e.target.value)} />
-        <div className="max-h-64 overflow-y-auto divide-y">
+        <div className="divide-y">
           {initialExpenses.map(e => (
             <label key={e.id} className="flex items-center gap-2 py-2 text-sm">
-              <input type="checkbox" checked={selected.includes(e.id)} onChange={() => toggle(e.id)} />
+              <input
+                type="checkbox"
+                className="w-4 h-4"
+                checked={selected.includes(e.id)}
+                onChange={() => toggle(e.id)}
+              />
               <span className="flex-1">{e.vendor || '—'} — {e.category || '—'} — {e.amount} {e.currency}</span>
             </label>
           ))}
