@@ -93,14 +93,18 @@ export async function POST(req: Request) {
     folder.file(`expenses.csv`, csv)
     folder.file(`expense-form.pdf`, pdfBytes)
     const zipBytes = await zip.generateAsync({ type: 'uint8array' })
-    const filePath = `exports/${user.id}/${Date.now()}.zip`
-    await supabase.storage.from('exports').upload(filePath, zipBytes, { contentType: 'application/zip', upsert: true })
+
+    const basePath = `exports/${user.id}/${Date.now()}`
+    await supabase.storage.from('exports').upload(`${basePath}/export.zip`, zipBytes, { contentType: 'application/zip', upsert: true })
+    await supabase.storage.from('exports').upload(`${basePath}/expense-form.pdf`, pdfBytes, { contentType: 'application/pdf', upsert: true })
+    await supabase.storage.from('exports').upload(`${basePath}/expenses.csv`, csv, { contentType: 'text/csv', upsert: true })
+    await supabase.storage.from('exports').upload(`${basePath}/receipts.zip`, receiptsZipBytes, { contentType: 'application/zip', upsert: true })
 
     const { data: created, error: e2 } = await supabase.from('exports').insert({
       user_id: user.id,
       period_start: start || null,
       period_end: end || null,
-      file_path: filePath,
+      file_path: basePath,
       total_amount: total,
       currency: chosenCurrency,
       items_count: expenses?.length || 0,
@@ -115,7 +119,7 @@ export async function POST(req: Request) {
       await supabase.from('expenses').update({ export_id: created.id }).in('id', expenses.map((e:any)=> e.id))
     }
 
-    const { data: urlData } = await supabase.storage.from('exports').createSignedUrl(filePath, 60 * 60 * 24)
+    const { data: urlData } = await supabase.storage.from('exports').createSignedUrl(`${basePath}/export.zip`, 60 * 60 * 24)
     const signedUrl = urlData?.signedUrl
 
     if (email) {
