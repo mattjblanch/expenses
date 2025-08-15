@@ -1,6 +1,7 @@
 import { serverClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import UnclaimedExpenses from '@/components/UnclaimedExpenses'
 
 export const revalidate = 0
 
@@ -79,20 +80,7 @@ export default async function DashboardPage() {
           <h2 className="font-semibold mb-2">Unclaimed Expenses</h2>
           <p className="text-sm">Total value: {aud.format(total)}</p>
           <p className="text-sm">Total expenses: {count}</p>
-          <ul className="mt-2 grid gap-3">
-            {list.map((e: any) => (
-              <li key={e.id}>
-                <Link href={`/expenses/${e.id}`} className="card block">
-                  <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-sm">
-                    <span>{e.date?.slice(0, 10)}</span>
-                    <span className="justify-self-end">{aud.format(e.amount)}</span>
-                    <span className="col-span-2">{e.vendor || '—'}</span>
-                    <span className="col-span-2">{e.description || '—'}</span>
-                  </div>
-                </Link>
-              </li>
-            ))}
-          </ul>
+          <UnclaimedExpenses list={list} />
           <Link
             href="/exports/new"
             className="px-3 py-2 rounded-md border block text-center mt-2 bg-red-600 text-white hover:bg-red-700"
