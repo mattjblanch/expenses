@@ -56,8 +56,8 @@ export default function ExportsPane() {
             {exports.map((e: any) => (
               <div key={e.id} className="card">
                 <button onClick={() => toggle(e.id)} className="text-left w-full">
-                  <div>Period: {e.period_start} → {e.period_end}</div>
-                  <div>Items: {e.items_count} • Total: {e.total_amount} {e.currency}</div>
+                  <div>Period: {e.period_end.slice(0, 10)}</div>
+                  <div>Transactions: {e.items_count} • Total: {e.total_amount} {e.currency}</div>
                 </button>
                 {files[e.id] && (
                   <div className="mt-2 text-sm">
