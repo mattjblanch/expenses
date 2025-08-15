@@ -1,15 +1,12 @@
 "use client";
-import { useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { parseDateInput } from "@/lib/date";
 
 export default function SnapExpensePage() {
-  const [saving, setSaving] = useState(false);
   const router = useRouter();
 
-  const submit = async (receiptFile: File) => {
-    setSaving(true);
+  const saveExpense = async (receiptFile: File) => {
     try {
       const {
         data: { user },
@@ -100,10 +97,14 @@ export default function SnapExpensePage() {
     } catch (e) {
       console.error("Failed to save expense", e);
     } finally {
-      setSaving(false);
-      router.push("/dashboard");
       router.refresh();
     }
+  };
+
+  const submit = (receiptFile: File) => {
+    router.push("/dashboard");
+    router.refresh();
+    void saveExpense(receiptFile);
   };
 
   return (
@@ -114,13 +115,11 @@ export default function SnapExpensePage() {
           type="file"
           accept="image/*"
           capture="environment"
-          disabled={saving}
           onChange={(e) => {
             const file = e.target.files?.[0];
             if (file) submit(file);
           }}
         />
-        {saving && <p>Saving...</p>}
       </div>
     </main>
   );
