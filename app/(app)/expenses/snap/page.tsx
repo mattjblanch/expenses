@@ -65,6 +65,7 @@ export default function SnapExpensePage() {
             const parsedDate = data.date
               ? parseDateInput(data.date)
               : null;
+            // Update fields but keep expense pending until user confirmation
             await fetch(`/api/expenses/${expenseId}`, {
               method: "PATCH",
               headers: { "Content-Type": "application/json" },
@@ -80,7 +81,6 @@ export default function SnapExpensePage() {
                 category: data.category || "",
                 account: "",
                 receipt_url: filePath,
-                pending: false,
               }),
               credentials: "include",
             });
