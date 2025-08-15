@@ -5,12 +5,10 @@ import { useRouter } from "next/navigation";
 import { parseDateInput } from "@/lib/date";
 
 export default function SnapExpensePage() {
-  const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const router = useRouter();
 
-  const submit = async () => {
-    if (!receiptFile) return;
+  const submit = async (receiptFile: File) => {
     setSaving(true);
     try {
       const {
@@ -116,15 +114,13 @@ export default function SnapExpensePage() {
           type="file"
           accept="image/*"
           capture="environment"
-          onChange={(e) => setReceiptFile(e.target.files?.[0] || null)}
+          disabled={saving}
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) submit(file);
+          }}
         />
-        <button
-          onClick={submit}
-          disabled={!receiptFile || saving}
-          className="px-3 py-2 rounded-md border disabled:opacity-50 hover:bg-neutral-100"
-        >
-          {saving ? "Saving..." : "Save"}
-        </button>
+        {saving && <p>Saving...</p>}
       </div>
     </main>
   );
