@@ -2,11 +2,15 @@
 import { supabase } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { parseDateInput } from "@/lib/date";
-import { useRef } from "react";
+import { useRef, useEffect } from "react";
 
 export default function SnapExpensePage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    fileInputRef.current?.click();
+  }, []);
 
   const saveExpense = async (receiptFile: File) => {
     try {
