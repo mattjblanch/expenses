@@ -2,26 +2,38 @@ import { serverClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import ExportsPane from './ExportsPane'
 import Link from 'next/link'
+import { convertExpenses } from '@/lib/currency'
 
 export const revalidate = 0
-
-const aud = new Intl.NumberFormat('en-AU', {
-  style: 'currency',
-  currency: 'AUD',
-})
 
 export default async function ExpensesPage() {
   const supabase = serverClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('settings')
+    .eq('id', user.id)
+    .single()
+  const defaultCurrency =
+    profile?.settings?.defaultCurrency ||
+    process.env.NEXT_PUBLIC_DEFAULT_CURRENCY ||
+    'AUD'
+  const fmt = new Intl.NumberFormat('en', {
+    style: 'currency',
+    currency: defaultCurrency,
+  })
+
   const { data: expenses } = await supabase
     .from('expenses')
     .select('id, vendor, description, amount, currency, date, pending, export_id')
     .eq('user_id', user.id)
     .order('date', { ascending: false })
 
-  const unexported = (expenses ?? []).filter((e: any) => !e.export_id)
-  const exported = (expenses ?? []).filter((e: any) => e.export_id)
+  const converted = await convertExpenses(expenses ?? [], defaultCurrency)
+  const unexported = converted.filter((e: any) => !e.export_id)
+  const exported = converted.filter((e: any) => e.export_id)
 
   return (
     <main className="container py-6">
@@ -58,7 +70,7 @@ export default async function ExpensesPage() {
                   {e.description || '—'}
                 </Link>
                 <Link className="underline justify-self-end" href={`/expenses/${e.id}`}>
-                  {aud.format(e.amount)}
+                  {fmt.format(e.amount)}
                 </Link>
               </div>
             ))}
@@ -90,7 +102,7 @@ export default async function ExpensesPage() {
               {e.description || '—'}
             </Link>
             <Link className="underline justify-self-end" href={`/expenses/${e.id}`}>
-              {aud.format(e.amount)}
+              {fmt.format(e.amount)}
             </Link>
           </div>
         ))}
