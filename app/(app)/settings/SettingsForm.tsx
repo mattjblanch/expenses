@@ -22,6 +22,7 @@ export default function SettingsForm({
   const [newCurrency, setNewCurrency] = useState('')
   const [saving, setSaving] = useState(false)
   const [checking, setChecking] = useState(false)
+  const [adding, setAdding] = useState(false)
   const [checkInfo, setCheckInfo] = useState<{
     name: string
     rate: number
@@ -32,14 +33,22 @@ export default function SettingsForm({
     Record<string, { name: string; rate: number }>
   >({})
 
-  const addCurrency = () => {
+  const addCurrency = async () => {
     if (!checkInfo) return
     const value = newCurrency.trim().toUpperCase()
     if (!value || currencies.includes(value)) return
-    setCurrencies([...currencies, value])
-    setNewCurrency('')
-    setCheckInfo(null)
-    setCheckError(null)
+    setAdding(true)
+    try {
+      await supabase
+        .from('user_currencies')
+        .insert({ user_id: userId, currency: value })
+      setCurrencies([...currencies, value])
+      setNewCurrency('')
+      setCheckInfo(null)
+      setCheckError(null)
+    } finally {
+      setAdding(false)
+    }
   }
 
   const checkCurrency = async () => {
@@ -61,9 +70,7 @@ export default function SettingsForm({
       const rate = latestData.rates?.[code]
       const name = currenciesData?.[code]
       if (typeof rate !== 'number' || !name) throw new Error('Invalid code')
-      // API returns the amount of new currency for 1 base currency; invert for display
-      const convertedRate = 1 / rate
-      setCheckInfo({ name, rate: convertedRate })
+      setCheckInfo({ name, rate })
     } catch (e) {
       setCheckError('Invalid currency code')
     } finally {
@@ -94,7 +101,7 @@ export default function SettingsForm({
             info[c] = { name, rate: 1 }
           } else {
             const rate = latestData.rates?.[c]
-            if (typeof rate === 'number') info[c] = { name, rate: 1 / rate }
+            if (typeof rate === 'number') info[c] = { name, rate }
           }
         })
         setCurrencyInfo(info)
@@ -165,7 +172,7 @@ export default function SettingsForm({
                   {c}
                   {currencyInfo[c] && (
                     <>
-                      {`: ${currencyInfo[c].name}: 1 ${c} = ${currencyInfo[c].rate} ${currency}`}
+                      {`: ${currencyInfo[c].name}: 1 ${currency} = ${currencyInfo[c].rate.toFixed(4)} ${c}`}
                     </>
                   )}
                 </li>
@@ -184,25 +191,22 @@ export default function SettingsForm({
               />
               <button
                 type="button"
-                onClick={checkCurrency}
-                disabled={checking || !newCurrency.trim()}
+                onClick={checkInfo ? addCurrency : checkCurrency}
+                disabled={checking || adding || !newCurrency.trim()}
                 className="px-3 py-1 border rounded disabled:opacity-50"
               >
-                {checking ? 'Checking...' : 'Check'}
-              </button>
-              <button
-                type="button"
-                onClick={addCurrency}
-                disabled={!checkInfo}
-                className={`px-3 py-1 border rounded ${checkInfo ? 'bg-green-600 text-white' : 'opacity-50 cursor-not-allowed'}`}
-              >
-                Add
+                {checkInfo
+                  ? adding
+                    ? 'Adding...'
+                    : 'Add Currency'
+                  : checking
+                    ? 'Validating...'
+                    : 'Validate'}
               </button>
             </div>
             {checkInfo && (
               <div className="text-sm mt-1">
-                {checkInfo.name}: 1 {newCurrency.trim().toUpperCase()} =
-                {` ${checkInfo.rate} ${currency}`}
+                {checkInfo.name}: 1 {currency} = {` ${checkInfo.rate.toFixed(4)} ${newCurrency.trim().toUpperCase()}`}
               </div>
             )}
             {checkError && (
