@@ -69,13 +69,6 @@ export default function Menu() {
             </Link>
           </div>
         </details>
-        <Link
-          href="/settings"
-          className="block px-4 py-2 hover:bg-neutral-100"
-          onClick={() => setOpen(false)}
-        >
-          Profile
-        </Link>
         <LogoutButton
           className="block w-full text-left px-4 py-2 hover:bg-neutral-100"
         />

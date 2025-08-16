@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import Menu from './Menu'
+import ProfileDropdown from './ProfileDropdown'
 import { serverClient } from '@/lib/supabase/server'
 
 export default async function Header() {
@@ -23,14 +24,7 @@ export default async function Header() {
           </Link>
         </div>
         <div className="flex items-center gap-3">
-          {user && (
-            <div className="flex items-center gap-2 sb-2">
-              <div className="w-8 h-8 rounded-full bg-neutral-200 flex items-center justify-center text-sm font-medium">
-                {name?.slice(0, 1).toUpperCase()}
-              </div>
-              <span className="text-sm hidden sm:inline">{name}</span>
-            </div>
-          )}
+          {user && <ProfileDropdown name={name} />}
         </div>
       </div>
     </header>
