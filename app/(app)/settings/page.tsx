@@ -11,8 +11,14 @@ export default async function SettingsPage() {
     .select('settings')
     .eq('id', user.id)
     .maybeSingle()
-  const settings =
-    profile?.settings || { defaultCurrency: 'AUD', enabledCurrencies: ['AUD', 'NZD'] }
+  const { data: enabled } = await supabase
+    .from('user_currencies')
+    .select('currency')
+    .eq('user_id', user.id)
+  const settings = {
+    defaultCurrency: profile?.settings?.defaultCurrency || 'AUD',
+    enabledCurrencies: enabled?.map((c) => c.currency) || ['AUD', 'NZD'],
+  }
   return (
     <main className="container py-6">
       <h1 className="text-xl font-semibold mb-4">Settings</h1>

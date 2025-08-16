@@ -26,9 +26,24 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   
   -- Added constraint to validate default currency
-  CONSTRAINT valid_default_currency 
+  CONSTRAINT valid_default_currency
     CHECK ((settings->>'defaultCurrency')::public.currency_code IS NOT NULL)
 );
+
+-- User currencies table for persisting enabled currencies per user
+CREATE TABLE IF NOT EXISTS public.user_currencies (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  currency TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  CONSTRAINT user_currency_length CHECK (char_length(currency) = 3),
+  CONSTRAINT unique_user_currency UNIQUE (user_id, currency)
+);
+
+ALTER TABLE public.user_currencies ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can view own currencies" ON public.user_currencies FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert own currencies" ON public.user_currencies FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can delete own currencies" ON public.user_currencies FOR DELETE USING (auth.uid() = user_id);
 
 -- Enhanced user creation trigger function
 CREATE OR REPLACE FUNCTION public.handle_new_user()
@@ -55,7 +70,12 @@ BEGIN
       NULLIF(NEW.raw_user_meta_data->>'avatar_url', 'https://via.placeholder.com/150')
     )
     ON CONFLICT (id) DO NOTHING;
-  EXCEPTION 
+
+    -- Insert default enabled currencies for the new user
+    INSERT INTO public.user_currencies (user_id, currency)
+    VALUES (NEW.id, 'AUD'), (NEW.id, 'NZD')
+    ON CONFLICT DO NOTHING;
+  EXCEPTION
     WHEN OTHERS THEN
       -- Log the error (you'd need to set up proper error logging)
       RAISE NOTICE 'Error inserting profile for user %: %', NEW.id, SQLERRM;
