@@ -168,11 +168,12 @@ export default function SettingsForm({
           <>
             <ul className="mb-2 list-disc list-inside">
               {sortedCurrencies.map((c) => (
-                <li key={c}>
-                  {c}
+                <li key={c} className="flex justify-between">
+                  <span>{c}:</span>
                   {currencyInfo[c] && (
                     <>
-                      {`: ${currencyInfo[c].name}: 1 ${currency} = ${currencyInfo[c].rate.toFixed(4)} ${c}`}
+                      <span className="flex-1 text-center">{currencyInfo[c].name}:</span>
+                      <span className="text-right">{`1 ${currency} = ${currencyInfo[c].rate.toFixed(4)} ${c}`}</span>
                     </>
                   )}
                 </li>
