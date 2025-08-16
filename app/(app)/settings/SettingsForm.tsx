@@ -108,14 +108,21 @@ export default function SettingsForm({
   const save = async () => {
     setSaving(true)
     const newSettings = {
-      ...initialSettings,
       defaultCurrency: currency,
-      enabledCurrencies: currencies,
     }
     await supabase
       .from('profiles')
       .update({ settings: newSettings })
       .eq('id', userId)
+    await supabase
+      .from('user_currencies')
+      .delete()
+      .eq('user_id', userId)
+    if (currencies.length) {
+      await supabase
+        .from('user_currencies')
+        .insert(currencies.map((c) => ({ user_id: userId, currency: c })))
+    }
     setSaving(false)
   }
 
