@@ -21,12 +21,46 @@ export default function SettingsForm({
   )
   const [newCurrency, setNewCurrency] = useState('')
   const [saving, setSaving] = useState(false)
+  const [checking, setChecking] = useState(false)
+  const [checkInfo, setCheckInfo] = useState<{
+    name: string
+    rate: number
+  } | null>(null)
+  const [checkError, setCheckError] = useState<string | null>(null)
 
   const addCurrency = () => {
+    if (!checkInfo) return
     const value = newCurrency.trim().toUpperCase()
     if (!value || currencies.includes(value)) return
     setCurrencies([...currencies, value])
     setNewCurrency('')
+    setCheckInfo(null)
+    setCheckError(null)
+  }
+
+  const checkCurrency = async () => {
+    const code = newCurrency.trim().toUpperCase()
+    if (!code) return
+    setChecking(true)
+    setCheckError(null)
+    setCheckInfo(null)
+    try {
+      const [convertRes, symbolsRes] = await Promise.all([
+        fetch(`https://api.exchangerate.host/convert?from=${code}&to=${currency}`),
+        fetch(`https://api.exchangerate.host/symbols?symbols=${code}`),
+      ])
+      if (!convertRes.ok || !symbolsRes.ok) throw new Error('Network error')
+      const convertData = await convertRes.json()
+      const symbolsData = await symbolsRes.json()
+      const rate = convertData.result
+      const name = symbolsData.symbols?.[code]?.description
+      if (typeof rate !== 'number' || !name) throw new Error('Invalid code')
+      setCheckInfo({ name, rate })
+    } catch (e) {
+      setCheckError('Invalid currency code')
+    } finally {
+      setChecking(false)
+    }
   }
 
   const save = async () => {
@@ -68,18 +102,40 @@ export default function SettingsForm({
         <div className="flex gap-2">
           <input
             value={newCurrency}
-            onChange={(e) => setNewCurrency(e.target.value)}
+            onChange={(e) => {
+              setNewCurrency(e.target.value)
+              setCheckInfo(null)
+              setCheckError(null)
+            }}
             className="border px-2 py-1 rounded"
             placeholder="Add currency"
           />
           <button
             type="button"
+            onClick={checkCurrency}
+            disabled={checking || !newCurrency.trim()}
+            className="px-3 py-1 border rounded disabled:opacity-50"
+          >
+            {checking ? 'Checking...' : 'Check'}
+          </button>
+          <button
+            type="button"
             onClick={addCurrency}
-            className="px-3 py-1 border rounded"
+            disabled={!checkInfo}
+            className={`px-3 py-1 border rounded ${checkInfo ? 'bg-green-600 text-white' : 'opacity-50 cursor-not-allowed'}`}
           >
             Add
           </button>
         </div>
+        {checkInfo && (
+          <div className="text-sm mt-1">
+            {checkInfo.name}: 1 {newCurrency.trim().toUpperCase()} =
+            {` ${checkInfo.rate} ${currency}`}
+          </div>
+        )}
+        {checkError && (
+          <div className="text-sm text-red-600 mt-1">{checkError}</div>
+        )}
       </div>
       <button
         onClick={save}
