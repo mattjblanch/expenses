@@ -39,11 +39,11 @@ export default function GamePage() {
 
   return (
     <main className="flex flex-col items-center justify-center h-full">
-      <div className="w-full max-w-xl aspect-square border flex items-center justify-center bg-neutral-100">
+      <div className="relative w-full max-w-xl aspect-square border bg-neutral-100">
         {round === 0 && !showPopup && (
           <button
             onClick={startGame}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md"
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 px-4 py-2 bg-blue-600 text-white rounded-md"
           >
             Start Game
           </button>
