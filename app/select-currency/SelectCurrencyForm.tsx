@@ -24,11 +24,40 @@ export default function SelectCurrencyForm() {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
-      const settings = { defaultCurrency: code, enabledCurrencies: [code] };
+
+      // Fetch existing profile so we don't overwrite the full name
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name, settings")
+        .eq("id", user.id)
+        .single();
+
+      // Ensure we always provide a full_name to satisfy not-null constraint
+      const full_name =
+        profile?.full_name ||
+        (user.user_metadata as any)?.full_name ||
+        (user.user_metadata as any)?.name ||
+        user.email ||
+        "Anonymous User";
+
+      const settings = {
+        ...(profile?.settings || {}),
+        defaultCurrency: code,
+        enabledCurrencies: [code],
+      };
+
       const { error: upErr } = await supabase
         .from("profiles")
-        .upsert({ id: user.id, settings }, { onConflict: "id" });
+        .upsert({ id: user.id, full_name, settings }, { onConflict: "id" });
       if (upErr) throw upErr;
+
+      // Replace any existing currency entries with the newly selected one
+      const { error: delErr } = await supabase
+        .from("user_currencies")
+        .delete()
+        .eq("user_id", user.id);
+      if (delErr) throw delErr;
+
       const { error: curErr } = await supabase
         .from("user_currencies")
         .upsert(
