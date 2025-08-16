@@ -45,17 +45,21 @@ export default function SettingsForm({
     setCheckError(null)
     setCheckInfo(null)
     try {
-      const [convertRes, symbolsRes] = await Promise.all([
-        fetch(`https://api.exchangerate.host/convert?from=${code}&to=${currency}`),
-        fetch(`https://api.exchangerate.host/symbols?symbols=${code}`),
+      const [latestRes, currenciesRes] = await Promise.all([
+        fetch(
+          `https://api.frankfurter.dev/v1/latest?base=${currency}&symbols=${code}`
+        ),
+        fetch('https://api.frankfurter.dev/v1/currencies'),
       ])
-      if (!convertRes.ok || !symbolsRes.ok) throw new Error('Network error')
-      const convertData = await convertRes.json()
-      const symbolsData = await symbolsRes.json()
-      const rate = convertData.result
-      const name = symbolsData.symbols?.[code]?.description
+      if (!latestRes.ok || !currenciesRes.ok) throw new Error('Network error')
+      const latestData = await latestRes.json()
+      const currenciesData = await currenciesRes.json()
+      const rate = latestData.rates?.[code]
+      const name = currenciesData?.[code]
       if (typeof rate !== 'number' || !name) throw new Error('Invalid code')
-      setCheckInfo({ name, rate })
+      // API returns the amount of new currency for 1 base currency; invert for display
+      const convertedRate = 1 / rate
+      setCheckInfo({ name, rate: convertedRate })
     } catch (e) {
       setCheckError('Invalid currency code')
     } finally {
