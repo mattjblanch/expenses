@@ -47,13 +47,6 @@ export default function Menu() {
           </summary>
           <div>
             <Link
-              href="/accounts"
-              className="block px-8 py-2 hover:bg-neutral-100"
-              onClick={() => setOpen(false)}
-            >
-              Accounts
-            </Link>
-            <Link
               href="/categories"
               className="block px-8 py-2 hover:bg-neutral-100"
               onClick={() => setOpen(false)}
