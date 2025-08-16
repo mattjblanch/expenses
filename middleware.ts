@@ -32,7 +32,6 @@ export async function middleware(req: NextRequest) {
     url.pathname.startsWith('/dashboard') ||
     url.pathname.startsWith('/expenses') ||
     url.pathname.startsWith('/categories') ||
-    url.pathname.startsWith('/accounts') ||
     url.pathname.startsWith('/settings')
 
   if (isProtected && !session) {
