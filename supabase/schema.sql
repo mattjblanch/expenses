@@ -19,15 +19,18 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   full_name TEXT NOT NULL,
   avatar_url TEXT DEFAULT 'https://via.placeholder.com/150',  -- Added default avatar
   settings JSONB NOT NULL DEFAULT jsonb_build_object(
-    'defaultCurrency', 'AUD'::text,
-    'enabledCurrencies', jsonb_build_array('AUD', 'NZD')
+    'defaultCurrency', NULL,
+    'enabledCurrencies', jsonb_build_array()
   ),
   deleted_at TIMESTAMPTZ,  -- Soft delete column
   created_at TIMESTAMPTZ DEFAULT NOW(),
   
   -- Added constraint to validate default currency
   CONSTRAINT valid_default_currency
-    CHECK ((settings->>'defaultCurrency')::public.currency_code IS NOT NULL)
+    CHECK (
+      settings->>'defaultCurrency' IS NULL OR
+      (settings->>'defaultCurrency')::public.currency_code IS NOT NULL
+    )
 );
 
 -- User currencies table for persisting enabled currencies per user
@@ -71,10 +74,6 @@ BEGIN
     )
     ON CONFLICT (id) DO NOTHING;
 
-    -- Insert default enabled currencies for the new user
-    INSERT INTO public.user_currencies (user_id, currency)
-    VALUES (NEW.id, 'AUD'), (NEW.id, 'NZD')
-    ON CONFLICT DO NOTHING;
   EXCEPTION
     WHEN OTHERS THEN
       -- Log the error (you'd need to set up proper error logging)
