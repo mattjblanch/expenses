@@ -27,10 +27,15 @@ export default function SelectCurrencyForm() {
       const settings = { defaultCurrency: code, enabledCurrencies: [code] };
       const { error: upErr } = await supabase
         .from("profiles")
-        .update({ settings })
-        .eq("id", user.id);
+        .upsert({ id: user.id, settings }, { onConflict: "id" });
       if (upErr) throw upErr;
-      await supabase.from("user_currencies").insert({ user_id: user.id, currency: code });
+      const { error: curErr } = await supabase
+        .from("user_currencies")
+        .upsert(
+          { user_id: user.id, currency: code },
+          { onConflict: "user_id,currency" }
+        );
+      if (curErr) throw curErr;
       router.push("/dashboard");
     } catch (e: any) {
       setError(e.message || "Error");
