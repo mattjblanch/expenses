@@ -14,6 +14,15 @@ export default function SnapExpenseButton({ className = "" }: { className?: stri
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) return;
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("settings")
+        .eq("id", user.id)
+        .single();
+      const defaultCurrency =
+        profile?.settings?.defaultCurrency ||
+        process.env.NEXT_PUBLIC_DEFAULT_CURRENCY ||
+        "AUD";
       const fileExt = receiptFile.name.split(".").pop() || "jpg";
       const filePath = `${user.id}/${Date.now()}.${fileExt}`;
       const { error: uploadError } = await supabase.storage
@@ -31,7 +40,7 @@ export default function SnapExpenseButton({ className = "" }: { className?: stri
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             amount: 0,
-            currency: process.env.NEXT_PUBLIC_DEFAULT_CURRENCY || "AUD",
+            currency: defaultCurrency,
             date: new Date().toISOString(),
             description: "",
             vendor: "",
@@ -71,10 +80,7 @@ export default function SnapExpenseButton({ className = "" }: { className?: stri
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 amount: data.amount ?? 0,
-                currency:
-                  (data.currency ||
-                    process.env.NEXT_PUBLIC_DEFAULT_CURRENCY ||
-                    "AUD").toUpperCase(),
+                currency: (data.currency || defaultCurrency).toUpperCase(),
                 date: (parsedDate ?? new Date()).toISOString(),
                 description: data.description || "",
                 vendor: data.vendor || "",

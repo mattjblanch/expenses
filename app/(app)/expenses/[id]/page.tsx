@@ -8,9 +8,13 @@ export default function EditExpensePage({ params }: { params: { id: string } }) 
   const { id } = params;
   const router = useRouter();
   const [amount, setAmount] = useState("");
-  const [currency, setCurrency] = useState(
+  const [defaultCurrency, setDefaultCurrency] = useState(
     process.env.NEXT_PUBLIC_DEFAULT_CURRENCY || "AUD"
   );
+  const [currency, setCurrency] = useState("");
+  const [useForeignCurrency, setUseForeignCurrency] = useState(false);
+  const [currencies, setCurrencies] = useState<string[]>([]);
+  const [convertedAmount, setConvertedAmount] = useState<string | null>(null);
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [description, setDescription] = useState("");
   const [vendor, setVendor] = useState("");
@@ -115,20 +119,33 @@ export default function EditExpensePage({ params }: { params: { id: string } }) 
         router.push("/login");
         return;
       }
-      const { data } = await supabase
-        .from("expenses")
-        .select("*, account:accounts(name), category_entity:categories(name)")
-        .eq("id", id)
-        .eq("user_id", user.id)
-        .single();
+      const [{ data: profile }, { data }] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("settings")
+          .eq("id", user.id)
+          .single(),
+        supabase
+          .from("expenses")
+          .select(
+            "*, account:accounts(name), category_entity:categories(name)"
+          )
+          .eq("id", id)
+          .eq("user_id", user.id)
+          .single(),
+      ]);
       if (!data) {
         router.push("/expenses");
         return;
       }
+      const defCurrency =
+        profile?.settings?.defaultCurrency ||
+        process.env.NEXT_PUBLIC_DEFAULT_CURRENCY ||
+        "AUD";
+      setDefaultCurrency(defCurrency);
+      setCurrency(data.currency || defCurrency);
+      setUseForeignCurrency(!!data.currency && data.currency !== defCurrency);
       setAmount(String(data.amount ?? ""));
-      setCurrency(
-        data.currency || process.env.NEXT_PUBLIC_DEFAULT_CURRENCY || "AUD"
-      );
       setDate(
         data.date?.slice(0, 10) || new Date().toISOString().slice(0, 10)
       );
@@ -161,9 +178,17 @@ export default function EditExpensePage({ params }: { params: { id: string } }) 
         .select("name")
         .order("name", { ascending: true });
       setAccounts(accountData?.map((a: { name: string }) => a.name) ?? []);
+
+      const { data: currencyData } = await supabase
+        .from("user_currencies")
+        .select("currency")
+        .order("currency", { ascending: true });
+      setCurrencies(
+        currencyData?.map((c: { currency: string }) => c.currency) || [defaultCurrency]
+      );
     };
     loadData();
-  }, []);
+  }, [defaultCurrency]);
 
   useEffect(() => {
     const createSigned = async () => {
@@ -187,6 +212,35 @@ export default function EditExpensePage({ params }: { params: { id: string } }) 
     };
     createSigned();
   }, [receiptUrl]);
+
+  useEffect(() => {
+    if (!useForeignCurrency) {
+      setConvertedAmount(null);
+      return;
+    }
+    const parsed = parseFloat(amount);
+    if (isNaN(parsed)) {
+      setConvertedAmount(null);
+      return;
+    }
+    const fetchRate = async () => {
+      try {
+        const res = await fetch(
+          `https://api.frankfurter.dev/v1/latest?amount=${parsed}&from=${currency}&to=${defaultCurrency}`
+        );
+        const data = await res.json();
+        const rate = data.rates?.[defaultCurrency];
+        if (typeof rate === "number") {
+          setConvertedAmount(rate.toFixed(2));
+        } else {
+          setConvertedAmount(null);
+        }
+      } catch {
+        setConvertedAmount(null);
+      }
+    };
+    fetchRate();
+  }, [useForeignCurrency, amount, currency, defaultCurrency]);
 
   const submit = async () => {
     setSaving(true);
@@ -217,7 +271,7 @@ export default function EditExpensePage({ params }: { params: { id: string } }) 
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           amount: isNaN(parsedAmount) ? 0 : parsedAmount,
-          currency,
+          currency: useForeignCurrency ? currency : defaultCurrency,
           date: isNaN(parsedDate.getTime())
             ? new Date().toISOString()
             : parsedDate.toISOString(),
@@ -272,11 +326,31 @@ export default function EditExpensePage({ params }: { params: { id: string } }) 
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
         />
-        <input
-          placeholder="Currency (e.g., AUD)"
-          value={currency}
-          onChange={(e) => setCurrency(e.target.value.toUpperCase())}
-        />
+        {useForeignCurrency && convertedAmount && (
+          <div className="text-sm text-gray-500">
+            ≈ {convertedAmount} {defaultCurrency}
+          </div>
+        )}
+        <label className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={useForeignCurrency}
+            onChange={(e) => {
+              setUseForeignCurrency(e.target.checked);
+              if (!e.target.checked) setCurrency(defaultCurrency);
+            }}
+          />
+          Foreign currency expense
+        </label>
+        {useForeignCurrency && (
+          <select value={currency} onChange={(e) => setCurrency(e.target.value)}>
+            {currencies.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
+        )}
         <input
           type="date"
           value={date}

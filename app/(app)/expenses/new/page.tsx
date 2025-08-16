@@ -6,7 +6,13 @@ import { parseDateInput } from "@/lib/date";
 
 export default function NewExpensePage() {
   const [amount, setAmount] = useState("");
-  const [currency, setCurrency] = useState(process.env.NEXT_PUBLIC_DEFAULT_CURRENCY || "AUD");
+  const [defaultCurrency, setDefaultCurrency] = useState(
+    process.env.NEXT_PUBLIC_DEFAULT_CURRENCY || "AUD"
+  );
+  const [currency, setCurrency] = useState("");
+  const [useForeignCurrency, setUseForeignCurrency] = useState(false);
+  const [currencies, setCurrencies] = useState<string[]>([]);
+  const [convertedAmount, setConvertedAmount] = useState<string | null>(null);
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [description, setDescription] = useState("");
   const [vendor, setVendor] = useState("");
@@ -60,7 +66,13 @@ export default function NewExpensePage() {
       if (!res.ok) return;
       const data = await res.json();
       if (data.amount) setAmount(data.amount.toString());
-      if (data.currency) setCurrency(data.currency.toUpperCase());
+      if (data.currency && data.currency.toUpperCase() !== defaultCurrency) {
+        setCurrency(data.currency.toUpperCase());
+        setUseForeignCurrency(true);
+      } else {
+        setCurrency(defaultCurrency);
+        setUseForeignCurrency(false);
+      }
       if (data.date) {
         const parsed = parseDateInput(data.date);
         setDate(
@@ -96,6 +108,24 @@ export default function NewExpensePage() {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) return;
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("settings")
+        .eq("id", user.id)
+        .single();
+      const defCurrency =
+        profile?.settings?.defaultCurrency ||
+        process.env.NEXT_PUBLIC_DEFAULT_CURRENCY ||
+        "AUD";
+      setDefaultCurrency(defCurrency);
+      setCurrency(defCurrency);
+      const { data: currencyData } = await supabase
+        .from("user_currencies")
+        .select("currency")
+        .order("currency", { ascending: true });
+      setCurrencies(
+        currencyData?.map((c: { currency: string }) => c.currency) || [defCurrency]
+      );
 
       const { data: vendorData } = await supabase
         .from("vendors")
@@ -167,6 +197,35 @@ export default function NewExpensePage() {
     }
   }, [categories, category]);
 
+  useEffect(() => {
+    if (!useForeignCurrency) {
+      setConvertedAmount(null);
+      return;
+    }
+    const parsed = parseFloat(amount);
+    if (isNaN(parsed)) {
+      setConvertedAmount(null);
+      return;
+    }
+    const fetchRate = async () => {
+      try {
+        const res = await fetch(
+          `https://api.frankfurter.dev/v1/latest?amount=${parsed}&from=${currency}&to=${defaultCurrency}`
+        );
+        const data = await res.json();
+        const rate = data.rates?.[defaultCurrency];
+        if (typeof rate === "number") {
+          setConvertedAmount(rate.toFixed(2));
+        } else {
+          setConvertedAmount(null);
+        }
+      } catch {
+        setConvertedAmount(null);
+      }
+    };
+    fetchRate();
+  }, [useForeignCurrency, amount, currency, defaultCurrency]);
+
   const submit = async () => {
     setSaving(true);
     try {
@@ -196,7 +255,7 @@ export default function NewExpensePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           amount: isNaN(parsedAmount) ? 0 : parsedAmount,
-          currency,
+          currency: useForeignCurrency ? currency : defaultCurrency,
           // ensure the date is in ISO format to satisfy the API/DB
           date: isNaN(parsedDate.getTime())
             ? new Date().toISOString()
@@ -252,12 +311,36 @@ export default function NewExpensePage() {
             </div>
           )}
         </div>
-        <input placeholder="Amount" value={amount} onChange={(e) => setAmount(e.target.value)} />
         <input
-          placeholder="Currency (e.g., AUD)"
-          value={currency}
-          onChange={(e) => setCurrency(e.target.value.toUpperCase())}
+          placeholder="Amount"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
         />
+        {useForeignCurrency && convertedAmount && (
+          <div className="text-sm text-gray-500">
+            ≈ {convertedAmount} {defaultCurrency}
+          </div>
+        )}
+        <label className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={useForeignCurrency}
+            onChange={(e) => {
+              setUseForeignCurrency(e.target.checked);
+              if (!e.target.checked) setCurrency(defaultCurrency);
+            }}
+          />
+          Foreign currency expense
+        </label>
+        {useForeignCurrency && (
+          <select value={currency} onChange={(e) => setCurrency(e.target.value)}>
+            {currencies.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
+        )}
         <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
         <input
           list="vendors"
