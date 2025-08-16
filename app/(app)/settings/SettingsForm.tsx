@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase/client'
 
 interface Settings {
@@ -27,6 +27,10 @@ export default function SettingsForm({
     rate: number
   } | null>(null)
   const [checkError, setCheckError] = useState<string | null>(null)
+  const [showCurrencies, setShowCurrencies] = useState(false)
+  const [currencyInfo, setCurrencyInfo] = useState<
+    Record<string, { name: string; rate: number }>
+  >({})
 
   const addCurrency = () => {
     if (!checkInfo) return
@@ -67,6 +71,40 @@ export default function SettingsForm({
     }
   }
 
+  useEffect(() => {
+    if (!showCurrencies) return
+    const fetchInfo = async () => {
+      try {
+        const symbols = currencies.filter((c) => c !== currency).join(',')
+        const url = symbols
+          ? `https://api.frankfurter.dev/v1/latest?base=${currency}&symbols=${symbols}`
+          : `https://api.frankfurter.dev/v1/latest?base=${currency}`
+        const [latestRes, currenciesRes] = await Promise.all([
+          fetch(url),
+          fetch('https://api.frankfurter.dev/v1/currencies'),
+        ])
+        if (!latestRes.ok || !currenciesRes.ok) throw new Error('Network error')
+        const latestData = await latestRes.json()
+        const currenciesData = await currenciesRes.json()
+        const info: Record<string, { name: string; rate: number }> = {}
+        currencies.forEach((c) => {
+          const name = currenciesData?.[c]
+          if (!name) return
+          if (c === currency) {
+            info[c] = { name, rate: 1 }
+          } else {
+            const rate = latestData.rates?.[c]
+            if (typeof rate === 'number') info[c] = { name, rate: 1 / rate }
+          }
+        })
+        setCurrencyInfo(info)
+      } catch {
+        setCurrencyInfo({})
+      }
+    }
+    fetchInfo()
+  }, [showCurrencies, currency, currencies])
+
   const save = async () => {
     setSaving(true)
     const newSettings = {
@@ -81,6 +119,12 @@ export default function SettingsForm({
     setSaving(false)
   }
 
+  const sortedCurrencies = [...currencies].sort((a, b) => {
+    if (a === currency) return -1
+    if (b === currency) return 1
+    return a.localeCompare(b)
+  })
+
   return (
     <div className="card space-y-3">
       <div>
@@ -89,7 +133,7 @@ export default function SettingsForm({
           value={currency}
           onChange={(e) => setCurrency(e.target.value)}
         >
-          {currencies.map((c) => (
+          {sortedCurrencies.map((c) => (
             <option key={c} value={c}>
               {c}
             </option>
@@ -98,47 +142,66 @@ export default function SettingsForm({
       </div>
       <div>
         <label className="block mb-1">Enabled currencies</label>
-        <ul className="mb-2 list-disc list-inside">
-          {currencies.map((c) => (
-            <li key={c}>{c}</li>
-          ))}
-        </ul>
-        <div className="flex gap-2">
+        <label className="flex items-center gap-2 mb-2">
           <input
-            value={newCurrency}
-            onChange={(e) => {
-              setNewCurrency(e.target.value)
-              setCheckInfo(null)
-              setCheckError(null)
-            }}
-            className="border px-2 py-1 rounded"
-            placeholder="Add currency"
+            type="checkbox"
+            checked={showCurrencies}
+            onChange={() => setShowCurrencies(!showCurrencies)}
           />
-          <button
-            type="button"
-            onClick={checkCurrency}
-            disabled={checking || !newCurrency.trim()}
-            className="px-3 py-1 border rounded disabled:opacity-50"
-          >
-            {checking ? 'Checking...' : 'Check'}
-          </button>
-          <button
-            type="button"
-            onClick={addCurrency}
-            disabled={!checkInfo}
-            className={`px-3 py-1 border rounded ${checkInfo ? 'bg-green-600 text-white' : 'opacity-50 cursor-not-allowed'}`}
-          >
-            Add
-          </button>
-        </div>
-        {checkInfo && (
-          <div className="text-sm mt-1">
-            {checkInfo.name}: 1 {newCurrency.trim().toUpperCase()} =
-            {` ${checkInfo.rate} ${currency}`}
-          </div>
-        )}
-        {checkError && (
-          <div className="text-sm text-red-600 mt-1">{checkError}</div>
+          Show enabled currencies
+        </label>
+        {showCurrencies && (
+          <>
+            <ul className="mb-2 list-disc list-inside">
+              {sortedCurrencies.map((c) => (
+                <li key={c}>
+                  {c}
+                  {currencyInfo[c] && (
+                    <>
+                      {`: ${currencyInfo[c].name}: 1 ${c} = ${currencyInfo[c].rate} ${currency}`}
+                    </>
+                  )}
+                </li>
+              ))}
+            </ul>
+            <div className="flex gap-2">
+              <input
+                value={newCurrency}
+                onChange={(e) => {
+                  setNewCurrency(e.target.value)
+                  setCheckInfo(null)
+                  setCheckError(null)
+                }}
+                className="border px-2 py-1 rounded"
+                placeholder="Add currency"
+              />
+              <button
+                type="button"
+                onClick={checkCurrency}
+                disabled={checking || !newCurrency.trim()}
+                className="px-3 py-1 border rounded disabled:opacity-50"
+              >
+                {checking ? 'Checking...' : 'Check'}
+              </button>
+              <button
+                type="button"
+                onClick={addCurrency}
+                disabled={!checkInfo}
+                className={`px-3 py-1 border rounded ${checkInfo ? 'bg-green-600 text-white' : 'opacity-50 cursor-not-allowed'}`}
+              >
+                Add
+              </button>
+            </div>
+            {checkInfo && (
+              <div className="text-sm mt-1">
+                {checkInfo.name}: 1 {newCurrency.trim().toUpperCase()} =
+                {` ${checkInfo.rate} ${currency}`}
+              </div>
+            )}
+            {checkError && (
+              <div className="text-sm text-red-600 mt-1">{checkError}</div>
+            )}
+          </>
         )}
       </div>
       <button
